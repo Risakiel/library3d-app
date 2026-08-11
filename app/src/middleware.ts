@@ -17,9 +17,11 @@ export function middleware(request: NextRequest) {
 
   const token = request.cookies.get(AUTH_COOKIE)?.value;
   if (!isValidToken(token)) {
-    const loginUrl = new URL("/admin/login", request.url);
-    loginUrl.searchParams.set("next", request.nextUrl.pathname);
-    return NextResponse.redirect(loginUrl);
+    const params = new URLSearchParams({ next: request.nextUrl.pathname });
+    return new NextResponse(null, {
+      status: 307,
+      headers: { Location: `/admin/login?${params.toString()}` },
+    });
   }
 
   return NextResponse.next();

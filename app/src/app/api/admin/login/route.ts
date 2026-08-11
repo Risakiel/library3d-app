@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 
 const AUTH_COOKIE = "library3d_admin_auth";
 
+function redirectTo(path: string) {
+  return new NextResponse(null, { status: 303, headers: { Location: path } });
+}
+
 export async function POST(request: NextRequest) {
   const formData = await request.formData();
   const username = String(formData.get("username") || "");
@@ -12,13 +16,11 @@ export async function POST(request: NextRequest) {
   const expectedPass = process.env.ADMIN_PASSWORD;
 
   if (username !== expectedUser || password !== expectedPass) {
-    const loginUrl = new URL("/admin/login", request.url);
-    loginUrl.searchParams.set("next", next);
-    loginUrl.searchParams.set("error", "1");
-    return NextResponse.redirect(loginUrl, { status: 303 });
+    const params = new URLSearchParams({ next, error: "1" });
+    return redirectTo(`/admin/login?${params.toString()}`);
   }
 
-  const response = NextResponse.redirect(new URL(next, request.url), { status: 303 });
+  const response = redirectTo(next);
 
   response.cookies.set(AUTH_COOKIE, Buffer.from(`${username}:${password}`).toString("base64"), {
     httpOnly: true,
