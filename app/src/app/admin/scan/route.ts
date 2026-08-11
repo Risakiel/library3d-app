@@ -1,14 +1,20 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { scanLibrary } from "@/lib/scanner";
 
-export async function POST(request: NextRequest) {
+export async function POST() {
+  console.log("[scan] Requete de scan recue");
+
   const result = await scanLibrary();
 
-  const url = new URL("/admin", request.url);
-  url.searchParams.set("scanned", "1");
-  url.searchParams.set("studios", String(result.studios));
-  url.searchParams.set("models", String(result.models));
-  url.searchParams.set("renders", String(result.renders));
+  const params = new URLSearchParams({
+    scanned: "1",
+    studios: String(result.studios),
+    models: String(result.models),
+    renders: String(result.renders),
+  });
 
-  return NextResponse.redirect(url, { status: 303 });
+  return new NextResponse(null, {
+    status: 303,
+    headers: { Location: `/admin?${params.toString()}` },
+  });
 }

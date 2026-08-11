@@ -41,7 +41,10 @@ export async function scanLibrary(): Promise<ScanResult> {
   let modelCount = 0;
   let renderCount = 0;
 
+  console.log(`[scan] Debut du scan de ${NAS_ROOT}`);
+
   const studioNames = await listDirs(NAS_ROOT);
+  console.log(`[scan] ${studioNames.length} studio(s) trouve(s)`);
 
   for (const studioName of studioNames) {
     const studio = await prisma.studio.upsert({
@@ -53,6 +56,7 @@ export async function scanLibrary(): Promise<ScanResult> {
 
     const studioPath = path.join(NAS_ROOT, studioName);
     const modelNames = await listDirs(studioPath);
+    console.log(`[scan] Studio "${studioName}" : ${modelNames.length} modele(s)`);
 
     for (const modelName of modelNames) {
       const folderPath = `${studioName}/${modelName}`;
@@ -85,9 +89,14 @@ export async function scanLibrary(): Promise<ScanResult> {
     }
   }
 
+  console.log("[scan] Nettoyage des entrees obsoletes en base");
   await prisma.render.deleteMany({ where: { relativePath: { notIn: Array.from(seenRenderPaths) } } });
   await prisma.model3D.deleteMany({ where: { folderPath: { notIn: Array.from(seenModelPaths) } } });
   await prisma.studio.deleteMany({ where: { name: { notIn: studioNames } } });
+
+  console.log(
+    `[scan] Termine : ${studioCount} studio(s), ${modelCount} modele(s), ${renderCount} render(s)`,
+  );
 
   return { studios: studioCount, models: modelCount, renders: renderCount };
 }
