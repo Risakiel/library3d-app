@@ -2,13 +2,17 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 
 export const dynamic = "force-dynamic";
 
-async function getModels(search: string | undefined) {
+async function getModels(search: string | undefined, sourceId: string | undefined, statusId: string | undefined) {
   return prisma.model3D.findMany({
-    where: search ? { name: { contains: search, mode: "insensitive" } } : undefined,
+    where: {
+      name: search ? { contains: search, mode: "insensitive" } : undefined,
+      sourceId: sourceId || undefined,
+      statusId: statusId || undefined,
+    },
     orderBy: { name: "asc" },
     include: {
       source: true,
@@ -20,12 +24,19 @@ async function getModels(search: string | undefined) {
 }
 
 interface LibraryPageProps {
-  searchParams: { q?: string };
+  searchParams: { q?: string; sourceId?: string; statusId?: string };
 }
 
 export default async function LibraryPage({ searchParams }: LibraryPageProps) {
   const search = searchParams.q?.trim() || undefined;
-  const models = await getModels(search);
+  const sourceId = searchParams.sourceId || undefined;
+  const statusId = searchParams.statusId || undefined;
+
+  const [models, sources, statuses] = await Promise.all([
+    getModels(search, sourceId, statusId),
+    prisma.source.findMany({ orderBy: { name: "asc" } }),
+    prisma.status.findMany({ orderBy: { position: "asc" } }),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -34,8 +45,42 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
         <p className="text-sm text-muted-foreground">{models.length} modele(s)</p>
       </div>
 
-      <form action="/admin/library" method="get" className="max-w-sm">
-        <Input name="q" defaultValue={search} placeholder="Rechercher un modele..." />
+      <form action="/admin/library" method="get" className="flex flex-wrap items-center gap-2">
+        <Input name="q" defaultValue={search} placeholder="Rechercher un modele..." className="max-w-sm" />
+
+        <select
+          name="sourceId"
+          defaultValue={sourceId ?? ""}
+          className="flex h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+        >
+          <option value="">Toutes les sources</option>
+          {sources.map((source) => (
+            <option key={source.id} value={source.id}>
+              {source.name}
+            </option>
+          ))}
+        </select>
+
+        <select
+          name="statusId"
+          defaultValue={statusId ?? ""}
+          className="flex h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+        >
+          <option value="">Tous les statuts</option>
+          {statuses.map((status) => (
+            <option key={status.id} value={status.id}>
+              {status.name}
+            </option>
+          ))}
+        </select>
+
+        <Button type="submit">Rechercher</Button>
+
+        {(search || sourceId || statusId) && (
+          <Link href="/admin/library" className={buttonVariants({ variant: "outline" })}>
+            Reinitialiser
+          </Link>
+        )}
       </form>
 
       <Card>
