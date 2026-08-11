@@ -1,28 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 
-function unauthorized() {
-  return new NextResponse("Authentication required", {
-    status: 401,
-    headers: { "WWW-Authenticate": 'Basic realm="Library3D Admin"' },
-  });
+const AUTH_COOKIE = "library3d_admin_auth";
+
+function isValidToken(token: string | undefined) {
+  if (!token) return false;
+  const expectedUser = process.env.ADMIN_USERNAME || "admin";
+  const expectedPass = process.env.ADMIN_PASSWORD;
+  const expected = Buffer.from(`${expectedUser}:${expectedPass}`).toString("base64");
+  return token === expected;
 }
 
 export function middleware(request: NextRequest) {
-  const expectedUser = process.env.ADMIN_USERNAME || "admin";
-  const expectedPass = process.env.ADMIN_PASSWORD;
-
-  const authHeader = request.headers.get("authorization");
-  if (!authHeader?.startsWith("Basic ")) {
-    return unauthorized();
+  if (request.nextUrl.pathname === "/admin/login") {
+    return NextResponse.next();
   }
 
-  const decoded = Buffer.from(authHeader.slice(6), "base64").toString("utf-8");
-  const separatorIndex = decoded.indexOf(":");
-  const user = decoded.slice(0, separatorIndex);
-  const pass = decoded.slice(separatorIndex + 1);
-
-  if (user !== expectedUser || pass !== expectedPass) {
-    return unauthorized();
+  const token = request.cookies.get(AUTH_COOKIE)?.value;
+  if (!isValidToken(token)) {
+    const loginUrl = new URL("/admin/login", request.url);
+    loginUrl.searchParams.set("next", request.nextUrl.pathname);
+    return NextResponse.redirect(loginUrl);
   }
 
   return NextResponse.next();
