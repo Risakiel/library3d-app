@@ -4,9 +4,6 @@ on:
   push:
     branches: [main]
 
-env:
-  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/library3d-app
-
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
@@ -17,6 +14,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Set lowercase image name
+        run: echo "IMAGE_NAME=ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_ENV"
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
