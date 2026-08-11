@@ -7,13 +7,47 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Placeholder de validation pour cette premiere etape (app <-> base de donnees).
-// Le modele de donnees complet (studios, tags, renders, fichiers STL) sera
-// defini a l'etape suivante.
+model Studio {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  models    Model3D[]
+}
+
 model Model3D {
   id         String   @id @default(cuid())
   name       String
+  // Chemin relatif depuis la racine NAS, ex: "Bulkamancer/Albedo-Overlord"
   folderPath String   @unique
+  studioId   String
+  studio     Studio   @relation(fields: [studioId], references: [id], onDelete: Cascade)
+  renders    Render[]
+  stlFiles   StlFile[]
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+
+  @@index([studioId])
+}
+
+model Render {
+  id           String   @id @default(cuid())
+  filename     String
+  relativePath String   @unique
+  modelId      String
+  model        Model3D  @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+
+  @@index([modelId])
+}
+
+model StlFile {
+  id           String   @id @default(cuid())
+  filename     String
+  relativePath String   @unique
+  modelId      String
+  model        Model3D  @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+
+  @@index([modelId])
 }
