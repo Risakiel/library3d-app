@@ -11,7 +11,7 @@ export default function AdminLoginPage({ searchParams }: LoginPageProps) {
 
       {searchParams.error === "1" && <p style={{ color: "#ff6b6b" }}>Identifiants incorrects.</p>}
 
-      <form action="/admin/login" method="post" style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+      <form action="/api/admin/login" method="post" style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
         <input type="hidden" name="next" value={next} />
         <label>
           Nom d&apos;utilisateur
