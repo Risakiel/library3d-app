@@ -10,7 +10,7 @@ export default function AdminLoginPage({ searchParams }: LoginPageProps) {
   const next = searchParams.next || "/admin";
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
+    <div className="dark flex min-h-screen items-center justify-center bg-background p-4 text-foreground">
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle>Connexion administration</CardTitle>

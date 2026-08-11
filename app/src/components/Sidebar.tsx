@@ -1,19 +1,23 @@
 import Link from "next/link";
 
-const NAV_ITEMS = [
-  { href: "/", label: "Accueil" },
-  { href: "/admin", label: "Administration" },
-];
+interface SidebarProps {
+  isAdmin: boolean;
+}
 
-export function Sidebar() {
+export function Sidebar({ isAdmin }: SidebarProps) {
+  const navItems = isAdmin
+    ? [{ href: "/admin", label: "Administration" }]
+    : [{ href: "/", label: "Accueil" }];
+  const homeHref = isAdmin ? "/admin" : "/";
+
   return (
     <nav className="flex w-64 shrink-0 flex-col gap-1 bg-sidebar p-5 text-sidebar-foreground">
-      <Link href="/" className="mb-6 flex items-center gap-2 px-2">
+      <Link href={homeHref} className="mb-6 flex items-center gap-2 px-2">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/logo-icon.png" alt="" className="h-8 w-8" />
         <span className="text-lg font-bold">Library3D</span>
       </Link>
-      {NAV_ITEMS.map((item) => (
+      {navItems.map((item) => (
         <Link
           key={item.href}
           href={item.href}

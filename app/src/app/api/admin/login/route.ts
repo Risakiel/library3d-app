@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-
-const AUTH_COOKIE = "library3d_admin_auth";
+import { AUTH_COOKIE } from "@/lib/auth";
 
 function redirectTo(path: string) {
   return new NextResponse(null, { status: 303, headers: { Location: path } });
