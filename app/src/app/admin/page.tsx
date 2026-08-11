@@ -4,7 +4,6 @@ interface AdminPageProps {
     studios?: string;
     models?: string;
     renders?: string;
-    stl?: string;
   };
 }
 
@@ -25,7 +24,6 @@ export default function AdminPage({ searchParams }: AdminPageProps) {
           <li>Studios : {searchParams.studios}</li>
           <li>Modeles : {searchParams.models}</li>
           <li>Renders : {searchParams.renders}</li>
-          <li>Fichiers STL : {searchParams.stl}</li>
         </ul>
       )}
 

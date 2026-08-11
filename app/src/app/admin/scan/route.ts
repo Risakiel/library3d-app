@@ -9,7 +9,6 @@ export async function POST(request: NextRequest) {
   url.searchParams.set("studios", String(result.studios));
   url.searchParams.set("models", String(result.models));
   url.searchParams.set("renders", String(result.renders));
-  url.searchParams.set("stl", String(result.stlFiles));
 
   return NextResponse.redirect(url, { status: 303 });
 }

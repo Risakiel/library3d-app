@@ -10,7 +10,6 @@ export interface ScanResult {
   studios: number;
   models: number;
   renders: number;
-  stlFiles: number;
 }
 
 async function listDirs(dirPath: string) {
@@ -37,12 +36,10 @@ async function findChildDir(parentPath: string, targetName: string) {
 export async function scanLibrary(): Promise<ScanResult> {
   const seenModelPaths = new Set<string>();
   const seenRenderPaths = new Set<string>();
-  const seenStlPaths = new Set<string>();
 
   let studioCount = 0;
   let modelCount = 0;
   let renderCount = 0;
-  let stlCount = 0;
 
   const studioNames = await listDirs(NAS_ROOT);
 
@@ -85,29 +82,12 @@ export async function scanLibrary(): Promise<ScanResult> {
           seenRenderPaths.add(relativePath);
         }
       }
-
-      const stlDirName = await findChildDir(modelPath, "STL");
-      if (stlDirName) {
-        const stlPath = path.join(modelPath, stlDirName);
-        const files = await listFiles(stlPath);
-        for (const file of files) {
-          const relativePath = `${folderPath}/${stlDirName}/${file}`;
-          await prisma.stlFile.upsert({
-            where: { relativePath },
-            update: { filename: file, modelId: model.id },
-            create: { filename: file, relativePath, modelId: model.id },
-          });
-          stlCount += 1;
-          seenStlPaths.add(relativePath);
-        }
-      }
     }
   }
 
   await prisma.render.deleteMany({ where: { relativePath: { notIn: Array.from(seenRenderPaths) } } });
-  await prisma.stlFile.deleteMany({ where: { relativePath: { notIn: Array.from(seenStlPaths) } } });
   await prisma.model3D.deleteMany({ where: { folderPath: { notIn: Array.from(seenModelPaths) } } });
   await prisma.studio.deleteMany({ where: { name: { notIn: studioNames } } });
 
-  return { studios: studioCount, models: modelCount, renders: renderCount, stlFiles: stlCount };
+  return { studios: studioCount, models: modelCount, renders: renderCount };
 }
