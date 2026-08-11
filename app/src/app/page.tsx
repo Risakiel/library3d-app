@@ -1,6 +1,8 @@
 import fs from "node:fs/promises";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 const NAS_ROOT = "/library3d";
 
 async function getStatus() {
