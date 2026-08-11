@@ -7,10 +7,8 @@ export const dynamic = "force-dynamic";
 const JOB_KEY = "scan_library";
 
 const INTERVAL_OPTIONS = [
-  { minutes: 60, label: "Toutes les heures" },
-  { minutes: 360, label: "Toutes les 6 heures" },
-  { minutes: 720, label: "Toutes les 12 heures" },
   { minutes: 1440, label: "Une fois par jour" },
+  { minutes: 4320, label: "Tous les 3 jours" },
   { minutes: 10080, label: "Une fois par semaine" },
 ];
 

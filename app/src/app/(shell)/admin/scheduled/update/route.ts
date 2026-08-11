@@ -5,7 +5,7 @@ export async function POST(request: NextRequest) {
   const formData = await request.formData();
   const jobKey = String(formData.get("jobKey") || "");
   const enabled = formData.get("enabled") === "on";
-  const intervalMinutes = Number(formData.get("intervalMinutes") || 1440);
+  const intervalMinutes = Math.max(1440, Number(formData.get("intervalMinutes") || 1440));
   const nextRunAt = enabled ? new Date(Date.now() + intervalMinutes * 60_000) : null;
 
   await prisma.scheduleConfig.upsert({
