@@ -12,6 +12,12 @@ export interface ScanResult {
   renders: number;
 }
 
+interface ModelDir {
+  name: string;
+  folderPath: string;
+  absolutePath: string;
+}
+
 async function listDirs(dirPath: string) {
   const entries = await fs.readdir(dirPath, { withFileTypes: true });
   return entries
@@ -31,6 +37,34 @@ async function listFiles(dirPath: string) {
 async function findChildDir(parentPath: string, targetName: string) {
   const dirs = await listDirs(parentPath);
   return dirs.find((dir) => dir.toLowerCase() === targetName.toLowerCase());
+}
+
+/**
+ * Descend recursivement jusqu'a trouver des dossiers modele (identifies par
+ * la presence d'un sous-dossier Render ou STL). Gere aussi bien les studios
+ * "Studio/Modele" (ex: Bulkamancer) que les marketplaces avec un niveau
+ * vendeur en plus "Studio/Vendeur/Modele" (ex: CGTrader).
+ */
+async function collectModelDirs(dirPath: string, relativePrefix: string): Promise<ModelDir[]> {
+  const subDirNames = await listDirs(dirPath);
+  const results: ModelDir[] = [];
+
+  for (const subDirName of subDirNames) {
+    const subPath = path.join(dirPath, subDirName);
+    const folderPath = `${relativePrefix}/${subDirName}`;
+
+    const isModelDir =
+      (await findChildDir(subPath, "Render")) !== undefined ||
+      (await findChildDir(subPath, "STL")) !== undefined;
+
+    if (isModelDir) {
+      results.push({ name: subDirName, folderPath, absolutePath: subPath });
+    } else {
+      results.push(...(await collectModelDirs(subPath, folderPath)));
+    }
+  }
+
+  return results;
 }
 
 export async function scanLibrary(): Promise<ScanResult> {
@@ -55,28 +89,25 @@ export async function scanLibrary(): Promise<ScanResult> {
     studioCount += 1;
 
     const studioPath = path.join(NAS_ROOT, studioName);
-    const modelNames = await listDirs(studioPath);
-    console.log(`[scan] Studio "${studioName}" : ${modelNames.length} modele(s)`);
+    const modelDirs = await collectModelDirs(studioPath, studioName);
+    console.log(`[scan] Studio "${studioName}" : ${modelDirs.length} modele(s)`);
 
-    for (const modelName of modelNames) {
-      const folderPath = `${studioName}/${modelName}`;
-      const modelPath = path.join(studioPath, modelName);
-
+    for (const modelDir of modelDirs) {
       const model = await prisma.model3D.upsert({
-        where: { folderPath },
-        update: { name: modelName, studioId: studio.id },
-        create: { name: modelName, folderPath, studioId: studio.id },
+        where: { folderPath: modelDir.folderPath },
+        update: { name: modelDir.name, studioId: studio.id },
+        create: { name: modelDir.name, folderPath: modelDir.folderPath, studioId: studio.id },
       });
       modelCount += 1;
-      seenModelPaths.add(folderPath);
+      seenModelPaths.add(modelDir.folderPath);
 
-      const renderDirName = await findChildDir(modelPath, "Render");
+      const renderDirName = await findChildDir(modelDir.absolutePath, "Render");
       if (renderDirName) {
-        const renderPath = path.join(modelPath, renderDirName);
+        const renderPath = path.join(modelDir.absolutePath, renderDirName);
         const files = await listFiles(renderPath);
         for (const file of files) {
           if (!IMAGE_EXTENSIONS.has(path.extname(file).toLowerCase())) continue;
-          const relativePath = `${folderPath}/${renderDirName}/${file}`;
+          const relativePath = `${modelDir.folderPath}/${renderDirName}/${file}`;
           await prisma.render.upsert({
             where: { relativePath },
             update: { filename: file, modelId: model.id },
