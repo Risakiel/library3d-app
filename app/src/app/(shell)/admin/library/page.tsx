@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { Select, SelectOption } from "@/components/ui/select";
 
 export const dynamic = "force-dynamic";
 
@@ -48,31 +49,23 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
       <form action="/admin/library" method="get" className="flex flex-wrap items-center gap-2">
         <Input name="q" defaultValue={search} placeholder="Rechercher un modele..." className="max-w-sm" />
 
-        <select
-          name="sourceId"
-          defaultValue={sourceId ?? ""}
-          className="flex h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-        >
-          <option value="">Toutes les sources</option>
+        <Select name="sourceId" defaultValue={sourceId ?? ""}>
+          <SelectOption value="">Toutes les sources</SelectOption>
           {sources.map((source) => (
-            <option key={source.id} value={source.id}>
+            <SelectOption key={source.id} value={source.id}>
               {source.name}
-            </option>
+            </SelectOption>
           ))}
-        </select>
+        </Select>
 
-        <select
-          name="statusId"
-          defaultValue={statusId ?? ""}
-          className="flex h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-        >
-          <option value="">Tous les statuts</option>
+        <Select name="statusId" defaultValue={statusId ?? ""}>
+          <SelectOption value="">Tous les statuts</SelectOption>
           {statuses.map((status) => (
-            <option key={status.id} value={status.id}>
+            <SelectOption key={status.id} value={status.id}>
               {status.name}
-            </option>
+            </SelectOption>
           ))}
-        </select>
+        </Select>
 
         <Button type="submit">Rechercher</Button>
 

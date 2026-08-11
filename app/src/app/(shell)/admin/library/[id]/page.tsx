@@ -3,6 +3,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { Select, SelectOption } from "@/components/ui/select";
 
 export const dynamic = "force-dynamic";
 
@@ -64,18 +65,14 @@ export default async function LibraryEditPage({ params }: LibraryEditPageProps) 
               <CardTitle className="text-base">Statut</CardTitle>
             </CardHeader>
             <CardContent>
-              <select
-                name="statusId"
-                defaultValue={model.statusId ?? ""}
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-              >
-                <option value="">Aucun statut</option>
+              <Select name="statusId" defaultValue={model.statusId ?? ""} className="w-full">
+                <SelectOption value="">Aucun statut</SelectOption>
                 {statuses.map((status) => (
-                  <option key={status.id} value={status.id}>
+                  <SelectOption key={status.id} value={status.id}>
                     {status.name}
-                  </option>
+                  </SelectOption>
                 ))}
-              </select>
+              </Select>
             </CardContent>
           </Card>
 

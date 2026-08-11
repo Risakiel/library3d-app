@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Select, SelectOption } from "@/components/ui/select";
 
 export const dynamic = "force-dynamic";
 
@@ -48,17 +49,13 @@ export default async function ScheduledPage() {
               Executer automatiquement
             </label>
 
-            <select
-              name="intervalMinutes"
-              defaultValue={config?.intervalMinutes ?? 1440}
-              className="flex h-9 w-full max-w-xs rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-            >
+            <Select name="intervalMinutes" defaultValue={config?.intervalMinutes ?? 1440} className="w-full max-w-xs">
               {INTERVAL_OPTIONS.map((option) => (
-                <option key={option.minutes} value={option.minutes}>
+                <SelectOption key={option.minutes} value={option.minutes}>
                   {option.label}
-                </option>
+                </SelectOption>
               ))}
-            </select>
+            </Select>
 
             <Button type="submit" variant="secondary">
               Enregistrer
