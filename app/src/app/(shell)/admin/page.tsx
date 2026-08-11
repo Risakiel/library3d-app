@@ -11,7 +11,7 @@ export default function AdminPage({ searchParams }: AdminPageProps) {
   const scanned = searchParams.scanned === "1";
 
   return (
-    <main style={{ padding: "2rem", maxWidth: 720, margin: "0 auto" }}>
+    <div style={{ maxWidth: 720 }}>
       <h1>Administration Library3D</h1>
       <p>Zone protegee par mot de passe.</p>
 
@@ -26,10 +26,6 @@ export default function AdminPage({ searchParams }: AdminPageProps) {
           <li>Renders : {searchParams.renders}</li>
         </ul>
       )}
-
-      <p>
-        <a href="/">Retour a l&apos;accueil</a>
-      </p>
-    </main>
+    </div>
   );
 }
