@@ -1,3 +1,7 @@
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+
 interface LoginPageProps {
   searchParams: { next?: string; error?: string };
 }
@@ -6,23 +10,34 @@ export default function AdminLoginPage({ searchParams }: LoginPageProps) {
   const next = searchParams.next || "/admin";
 
   return (
-    <main style={{ padding: "2rem", maxWidth: 360, margin: "0 auto" }}>
-      <h1>Connexion administration</h1>
+    <div className="flex min-h-screen items-center justify-center p-4">
+      <Card className="w-full max-w-sm">
+        <CardHeader>
+          <CardTitle>Connexion administration</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {searchParams.error === "1" && (
+            <p className="mb-4 text-sm text-destructive">Identifiants incorrects.</p>
+          )}
 
-      {searchParams.error === "1" && <p style={{ color: "#ff6b6b" }}>Identifiants incorrects.</p>}
-
-      <form action="/api/admin/login" method="post" style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-        <input type="hidden" name="next" value={next} />
-        <label>
-          Nom d&apos;utilisateur
-          <input type="text" name="username" required autoFocus style={{ display: "block", width: "100%" }} />
-        </label>
-        <label>
-          Mot de passe
-          <input type="password" name="password" required style={{ display: "block", width: "100%" }} />
-        </label>
-        <button type="submit">Se connecter</button>
-      </form>
-    </main>
+          <form action="/api/admin/login" method="post" className="flex flex-col gap-4">
+            <input type="hidden" name="next" value={next} />
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="username" className="text-sm">
+                Nom d&apos;utilisateur
+              </label>
+              <Input id="username" type="text" name="username" required autoFocus />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="password" className="text-sm">
+                Mot de passe
+              </label>
+              <Input id="password" type="password" name="password" required />
+            </div>
+            <Button type="submit">Se connecter</Button>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

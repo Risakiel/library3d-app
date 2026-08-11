@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { Card, CardContent } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -17,10 +18,13 @@ export default async function HomePage() {
   if (models.length === 0) {
     return (
       <div>
-        <h1>Library3D</h1>
-        <p>
+        <h1 className="text-2xl font-bold">Library3D</h1>
+        <p className="mt-4 text-muted-foreground">
           Aucun modele en base pour le moment. Lance un scan depuis{" "}
-          <a href="/admin">l&apos;administration</a>.
+          <a href="/admin" className="text-primary underline-offset-4 hover:underline">
+            l&apos;administration
+          </a>
+          .
         </p>
       </div>
     );
@@ -28,48 +32,32 @@ export default async function HomePage() {
 
   return (
     <div>
-      <h1>Library3D</h1>
+      <h1 className="mb-6 text-2xl font-bold">Library3D</h1>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
-          gap: "1rem",
-        }}
-      >
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-4">
         {models.map((model) => {
           const cover = model.renders[0];
           return (
-            <div
+            <Card
               key={model.id}
-              style={{
-                border: "1px solid #262626",
-                borderRadius: 8,
-                overflow: "hidden",
-              }}
+              className="overflow-hidden transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-lg"
             >
-              <div
-                style={{
-                  aspectRatio: "1 / 1",
-                  backgroundColor: "#1a1a1a",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
+              <div className="flex aspect-square items-center justify-center bg-muted">
                 {cover ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={`/api/renders/${cover.relativePath}`}
                     alt={model.name}
-                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    className="h-full w-full object-cover"
                   />
                 ) : (
-                  <span style={{ color: "#555" }}>Pas de photo</span>
+                  <span className="text-sm text-muted-foreground">Pas de photo</span>
                 )}
               </div>
-              <p style={{ padding: "0.5rem 0.75rem", margin: 0 }}>{model.name}</p>
-            </div>
+              <CardContent className="p-3">
+                <p className="truncate text-sm">{model.name}</p>
+              </CardContent>
+            </Card>
           );
         })}
       </div>

@@ -3,9 +3,9 @@ import { Sidebar } from "@/components/Sidebar";
 
 export default function ShellLayout({ children }: { children: ReactNode }) {
   return (
-    <div style={{ display: "flex", minHeight: "100vh" }}>
+    <div className="flex min-h-screen">
       <Sidebar />
-      <main style={{ flex: 1, padding: "2rem" }}>{children}</main>
+      <main className="flex-1 p-8">{children}</main>
     </div>
   );
 }
