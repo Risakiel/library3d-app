@@ -7,7 +7,10 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Studio {
+// Grande famille / createur d'un modele (deduplique par nom, quelle que soit
+// sa profondeur reelle sur le NAS - ex: "Bulkamancer" a la racine ou nichee
+// sous "CGTrader" pointent vers le meme Source).
+model Source {
   id        String    @id @default(cuid())
   name      String    @unique
   createdAt DateTime  @default(now())
@@ -15,18 +18,39 @@ model Studio {
   models    Model3D[]
 }
 
+// Statut d'impression, positionnable manuellement dans la liste (champ position).
+model Status {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  position  Int       @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  models    Model3D[]
+}
+
+model Tag {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  createdAt DateTime  @default(now())
+  models    Model3D[] @relation("Model3DTags")
+}
+
 model Model3D {
-  id         String   @id @default(cuid())
+  id         String    @id @default(cuid())
   name       String
   // Chemin relatif depuis la racine NAS, ex: "Bulkamancer/Albedo-Overlord"
-  folderPath String   @unique
-  studioId   String
-  studio     Studio   @relation(fields: [studioId], references: [id], onDelete: Cascade)
+  folderPath String    @unique
+  sourceId   String
+  source     Source    @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  statusId   String?
+  status     Status?   @relation(fields: [statusId], references: [id], onDelete: SetNull)
+  tags       Tag[]     @relation("Model3DTags")
   renders    Render[]
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 
-  @@index([studioId])
+  @@index([sourceId])
+  @@index([statusId])
 }
 
 model Render {
@@ -40,3 +64,25 @@ model Render {
   @@index([modelId])
 }
 
+// Historique des scans (manuels ou planifies), pour la page Journal.
+model ScanLog {
+  id           String    @id @default(cuid())
+  trigger      String    @default("manual")
+  startedAt    DateTime  @default(now())
+  finishedAt   DateTime?
+  success      Boolean   @default(false)
+  sourceCount  Int       @default(0)
+  modelCount   Int       @default(0)
+  renderCount  Int       @default(0)
+  errorMessage String?
+}
+
+// Configuration de planification par job (un seul job "scan_library" pour le moment).
+model ScheduleConfig {
+  id              String    @id @default(cuid())
+  jobKey          String    @unique
+  enabled         Boolean   @default(false)
+  intervalMinutes Int       @default(1440)
+  lastRunAt       DateTime?
+  nextRunAt       DateTime?
+}

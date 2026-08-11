@@ -1,13 +1,29 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { cn } from "@/lib/utils";
 
 interface SidebarProps {
   isAdmin: boolean;
 }
 
+const GUEST_NAV_ITEMS = [{ href: "/", label: "Accueil" }];
+
+const ADMIN_NAV_ITEMS = [
+  { href: "/admin", label: "Dashboard" },
+  { href: "/admin/library", label: "Library" },
+  { href: "/admin/status", label: "Status" },
+  { href: "/admin/sources", label: "Source" },
+  { href: "/admin/tags", label: "Tags" },
+  { href: "/admin/scheduled", label: "Scheduled" },
+  { href: "/admin/journal", label: "Journal" },
+  { href: "/admin/settings", label: "Parametres" },
+];
+
 export function Sidebar({ isAdmin }: SidebarProps) {
-  const navItems = isAdmin
-    ? [{ href: "/admin", label: "Administration" }]
-    : [{ href: "/", label: "Accueil" }];
+  const pathname = usePathname();
+  const navItems = isAdmin ? ADMIN_NAV_ITEMS : GUEST_NAV_ITEMS;
   const homeHref = isAdmin ? "/admin" : "/";
 
   return (
@@ -17,15 +33,23 @@ export function Sidebar({ isAdmin }: SidebarProps) {
         <img src="/logo-icon.png" alt="" className="h-8 w-8" />
         <span className="text-lg font-bold">Library3D</span>
       </Link>
-      {navItems.map((item) => (
-        <Link
-          key={item.href}
-          href={item.href}
-          className="rounded-md px-3 py-2 text-sm text-sidebar-foreground/80 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-        >
-          {item.label}
-        </Link>
-      ))}
+      {navItems.map((item) => {
+        const isActive = item.href === "/admin" ? pathname === "/admin" : pathname.startsWith(item.href);
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={cn(
+              "rounded-md px-3 py-2 text-sm transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+              isActive
+                ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                : "text-sidebar-foreground/80",
+            )}
+          >
+            {item.label}
+          </Link>
+        );
+      })}
     </nav>
   );
 }
