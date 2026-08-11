@@ -1,0 +1,42 @@
+networks:
+  br0:
+    external: true
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: library3d-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - ${APPDATA_PATH}/postgres:/var/lib/postgresql/data
+    networks:
+      br0:
+        ipv4_address: ${DB_IP}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: ./app
+    container_name: library3d-app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${DB_IP}:5432/${POSTGRES_DB}
+      ADMIN_USERNAME: ${ADMIN_USERNAME}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      NODE_ENV: production
+    networks:
+      br0:
+        ipv4_address: ${APP_IP}
+    volumes:
+      - ${NAS_LIBRARY_PATH}:/library3d:ro
