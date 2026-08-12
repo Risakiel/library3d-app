@@ -1,9 +1,11 @@
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { tagColorClass } from "@/lib/tagColors";
+import { isMarketplaceSupported } from "@/lib/marketplaceLookup";
 
 export const dynamic = "force-dynamic";
 
@@ -27,11 +29,16 @@ export default async function TagsPage() {
     <div className="max-w-2xl space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Tags</h1>
-        <form action="/admin/tags/detect-from-names" method="post">
-          <Button type="submit" variant="outline" size="sm">
-            Detecter depuis les noms
-          </Button>
-        </form>
+        <div className="flex items-center gap-2">
+          <Link href="/admin/library/review-tags" className="text-sm text-primary hover:underline">
+            Suggestions en attente
+          </Link>
+          <form action="/admin/tags/detect-from-names" method="post">
+            <Button type="submit" variant="outline" size="sm">
+              Detecter depuis les noms
+            </Button>
+          </form>
+        </div>
       </div>
 
       {GROUPS.map((group) => {
@@ -63,6 +70,13 @@ export default async function TagsPage() {
                   <span className="whitespace-nowrap text-xs text-muted-foreground">
                     {tag._count.models} modele(s)
                   </span>
+                  {group.color === "RED" && isMarketplaceSupported(tag.name) && (
+                    <form action={`/admin/tags/${tag.id}/lookup-marketplace`} method="post">
+                      <Button type="submit" variant="secondary" size="sm">
+                        Chercher les tags
+                      </Button>
+                    </form>
+                  )}
                   <form action={`/admin/tags/${tag.id}/delete`} method="post">
                     <Button type="submit" variant="outline" size="sm">
                       Supprimer

@@ -6,6 +6,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Select, SelectOption } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { tagColorClass } from "@/lib/tagColors";
+import { isMarketplaceSupported } from "@/lib/marketplaceLookup";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +17,7 @@ async function getModel(id: string) {
       source: true,
       status: true,
       tags: true,
+      tagSuggestions: true,
       renders: { take: 1, orderBy: { filename: "asc" } },
     },
   });
@@ -36,6 +38,7 @@ export default async function LibraryEditPage({ params }: LibraryEditPageProps) 
 
   const cover = model.renders[0];
   const modelTagIds = new Set(model.tags.map((tag) => tag.id));
+  const marketplaceTag = model.tags.find((tag) => tag.color === "RED" && isMarketplaceSupported(tag.name));
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -121,6 +124,65 @@ export default async function LibraryEditPage({ params }: LibraryEditPageProps) 
           </div>
         </form>
       </div>
+
+      {marketplaceTag && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Recherche marketplace ({marketplaceTag.name})</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {model.tagSuggestions.length === 0 ? (
+              <form action={`/admin/library/${model.id}/lookup-tags`} method="post">
+                <Button type="submit" variant="secondary">
+                  Chercher les tags en ligne
+                </Button>
+              </form>
+            ) : (
+              <form
+                action={`/admin/library/${model.id}/apply-tag-suggestions`}
+                method="post"
+                className="space-y-3"
+              >
+                <p className="text-sm text-muted-foreground">
+                  Trouve sur{" "}
+                  <a
+                    href={model.tagSuggestions[0].sourceUrl ?? undefined}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-primary hover:underline"
+                  >
+                    {model.tagSuggestions[0].sourceTitle || marketplaceTag.name}
+                  </a>{" "}
+                  - decoche ce que tu ne veux pas garder :
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  {model.tagSuggestions.map((suggestion) => (
+                    <label
+                      key={suggestion.id}
+                      className={cn(
+                        "flex items-center gap-2 rounded-full px-3 py-1 text-sm",
+                        tagColorClass("BLUE"),
+                      )}
+                    >
+                      <input
+                        type="checkbox"
+                        name="tagNames"
+                        value={suggestion.tagName}
+                        defaultChecked
+                        className="h-4 w-4 rounded border-input"
+                      />
+                      {suggestion.tagName}
+                    </label>
+                  ))}
+                </div>
+                <div className="flex items-center gap-3">
+                  <Button type="submit">Ajouter les tags selectionnes</Button>
+                </div>
+              </form>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

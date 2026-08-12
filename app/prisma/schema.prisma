@@ -52,13 +52,29 @@ model Model3D {
   source     Source    @relation(fields: [sourceId], references: [id], onDelete: Cascade)
   statusId   String?
   status     Status?   @relation(fields: [statusId], references: [id], onDelete: SetNull)
-  tags       Tag[]     @relation("Model3DTags")
-  renders    Render[]
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  tags           Tag[]           @relation("Model3DTags")
+  renders        Render[]
+  tagSuggestions TagSuggestion[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
 
   @@index([sourceId])
   @@index([statusId])
+}
+
+// Tags proposes par la recherche marketplace, en attente de validation manuelle
+// avant d'etre convertis en vrais Tag (bleus) attaches au modele.
+model TagSuggestion {
+  id          String   @id @default(cuid())
+  modelId     String
+  model       Model3D  @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  tagName     String
+  sourceUrl   String?
+  sourceTitle String?
+  createdAt   DateTime @default(now())
+
+  @@unique([modelId, tagName])
+  @@index([modelId])
 }
 
 model Render {
