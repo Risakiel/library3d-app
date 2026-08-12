@@ -2,18 +2,18 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 const DEFAULT_STATUSES = [
-  "📥 New",
-  "🔍 À préparer",
-  "🖥️ Prêt à imprimer",
-  "🖨️ Impression",
-  "🧼 Post-traitement",
-  "🪚 Préparation",
-  "🧴 Sous-couche",
-  "🎨 Peinture",
-  "🖌️ Finitions",
-  "🧩 Assemblage",
-  "✅ Terminé",
-  "🏆 En vitrine",
+  "New",
+  "À préparer",
+  "Prêt à imprimer",
+  "Impression",
+  "Post-traitement",
+  "Préparation",
+  "Sous-couche",
+  "Peinture",
+  "Finitions",
+  "Assemblage",
+  "Terminé",
+  "En vitrine",
 ];
 
 export async function POST() {

@@ -25,7 +25,14 @@ export default async function TagsPage() {
 
   return (
     <div className="max-w-2xl space-y-6">
-      <h1 className="text-2xl font-bold">Tags</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Tags</h1>
+        <form action="/admin/tags/detect-from-names" method="post">
+          <Button type="submit" variant="outline" size="sm">
+            Detecter depuis les noms
+          </Button>
+        </form>
+      </div>
 
       {GROUPS.map((group) => {
         const groupTags = tags.filter((tag) => tag.color === group.color);
@@ -42,16 +49,25 @@ export default async function TagsPage() {
                 <p className="p-4 text-sm text-muted-foreground">Aucun tag dans cette categorie.</p>
               )}
               {groupTags.map((tag) => (
-                <div key={tag.id} className="flex items-center justify-between gap-3 p-3">
-                  <span className="text-sm">{tag.name}</span>
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs text-muted-foreground">{tag._count.models} modele(s)</span>
-                    <form action={`/admin/tags/${tag.id}/delete`} method="post">
-                      <Button type="submit" variant="outline" size="sm">
-                        Supprimer
-                      </Button>
-                    </form>
-                  </div>
+                <div key={tag.id} className="flex items-center gap-3 p-3">
+                  <form
+                    action={`/admin/tags/${tag.id}/rename`}
+                    method="post"
+                    className="flex flex-1 items-center gap-2"
+                  >
+                    <Input name="name" defaultValue={tag.name} className="h-8" />
+                    <Button type="submit" variant="secondary" size="sm">
+                      Renommer
+                    </Button>
+                  </form>
+                  <span className="whitespace-nowrap text-xs text-muted-foreground">
+                    {tag._count.models} modele(s)
+                  </span>
+                  <form action={`/admin/tags/${tag.id}/delete`} method="post">
+                    <Button type="submit" variant="outline" size="sm">
+                      Supprimer
+                    </Button>
+                  </form>
                 </div>
               ))}
             </CardContent>
@@ -66,7 +82,8 @@ export default async function TagsPage() {
             <Button type="submit">Ajouter</Button>
           </form>
           <p className="mt-2 text-xs text-muted-foreground">
-            Les tags marketplace/createur sont crees et colores automatiquement a chaque scan.
+            Les tags marketplace/createur sont crees et colores automatiquement a chaque scan. Renommer un
+            tag vers un nom existant fusionne les deux automatiquement.
           </p>
         </CardContent>
       </Card>
