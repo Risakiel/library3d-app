@@ -23,14 +23,22 @@ model Status {
   id        String    @id @default(cuid())
   name      String    @unique
   position  Int       @default(0)
+  isDefault Boolean   @default(false)
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   models    Model3D[]
 }
 
+enum TagColor {
+  RED
+  GREEN
+  BLUE
+}
+
 model Tag {
   id        String    @id @default(cuid())
   name      String    @unique
+  color     TagColor  @default(BLUE)
   createdAt DateTime  @default(now())
   models    Model3D[] @relation("Model3DTags")
 }

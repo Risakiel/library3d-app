@@ -17,6 +17,7 @@ interface ModelDir {
   folderPath: string;
   absolutePath: string;
   sourceName: string;
+  marketplaceName: string | null;
 }
 
 async function listDirs(dirPath: string) {
@@ -45,33 +46,50 @@ async function findChildDir(parentPath: string, targetName: string) {
  * la presence d'un sous-dossier Render ou STL). Le "Source" d'un modele est
  * toujours son dossier parent direct - ce qui deduplique naturellement les
  * createurs qu'ils soient a la racine ("Bulkamancer") ou niches sous une
- * marketplace ("CGTrader/Bulkamancer").
+ * marketplace ("CGTrader/Bulkamancer"). Le dossier de tout premier niveau est
+ * conserve a part : s'il differe du parent direct, c'est une marketplace
+ * (ex: "CGTrader"), sinon il n'y a pas de marketplace (createur direct).
  */
-async function collectModelDirs(dirPath: string, relativePrefix: string): Promise<ModelDir[]> {
+async function collectModelDirs(
+  dirPath: string,
+  relativePrefix: string,
+  topLevelName: string | null,
+): Promise<ModelDir[]> {
   const subDirNames = await listDirs(dirPath);
   const results: ModelDir[] = [];
 
   for (const subDirName of subDirNames) {
     const subPath = path.join(dirPath, subDirName);
     const folderPath = relativePrefix ? `${relativePrefix}/${subDirName}` : subDirName;
+    const currentTopLevel = topLevelName ?? subDirName;
 
     const isModelDir =
       (await findChildDir(subPath, "Render")) !== undefined ||
       (await findChildDir(subPath, "STL")) !== undefined;
 
     if (isModelDir) {
+      const sourceName = path.basename(dirPath);
       results.push({
         name: subDirName,
         folderPath,
         absolutePath: subPath,
-        sourceName: path.basename(dirPath),
+        sourceName,
+        marketplaceName: currentTopLevel !== sourceName ? currentTopLevel : null,
       });
     } else {
-      results.push(...(await collectModelDirs(subPath, folderPath)));
+      results.push(...(await collectModelDirs(subPath, folderPath, currentTopLevel)));
     }
   }
 
   return results;
+}
+
+async function upsertAutoTag(name: string, color: "RED" | "GREEN") {
+  return prisma.tag.upsert({
+    where: { name },
+    update: { color },
+    create: { name, color },
+  });
 }
 
 export async function scanLibrary(): Promise<ScanResult> {
@@ -83,7 +101,8 @@ export async function scanLibrary(): Promise<ScanResult> {
 
   console.log(`[scan] Debut du scan de ${NAS_ROOT}`);
 
-  const modelDirs = await collectModelDirs(NAS_ROOT, "");
+  const defaultStatus = await prisma.status.findFirst({ where: { isDefault: true } });
+  const modelDirs = await collectModelDirs(NAS_ROOT, "", null);
   console.log(`[scan] ${modelDirs.length} modele(s) trouve(s)`);
 
   for (const modelDir of modelDirs) {
@@ -97,9 +116,25 @@ export async function scanLibrary(): Promise<ScanResult> {
     const model = await prisma.model3D.upsert({
       where: { folderPath: modelDir.folderPath },
       update: { name: modelDir.name, sourceId: source.id },
-      create: { name: modelDir.name, folderPath: modelDir.folderPath, sourceId: source.id },
+      create: {
+        name: modelDir.name,
+        folderPath: modelDir.folderPath,
+        sourceId: source.id,
+        statusId: defaultStatus?.id,
+      },
     });
     seenModelPaths.add(modelDir.folderPath);
+
+    const creatorTag = await upsertAutoTag(modelDir.sourceName, "GREEN");
+    const autoTagIds = [creatorTag.id];
+    if (modelDir.marketplaceName) {
+      const marketplaceTag = await upsertAutoTag(modelDir.marketplaceName, "RED");
+      autoTagIds.push(marketplaceTag.id);
+    }
+    await prisma.model3D.update({
+      where: { id: model.id },
+      data: { tags: { connect: autoTagIds.map((id) => ({ id })) } },
+    });
 
     const renderDirName = await findChildDir(modelDir.absolutePath, "Render");
     if (renderDirName) {

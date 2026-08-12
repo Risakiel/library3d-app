@@ -4,6 +4,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Select, SelectOption } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
+import { tagColorClass } from "@/lib/tagColors";
 
 export const dynamic = "force-dynamic";
 
@@ -104,7 +106,10 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
                   <td className="p-3">
                     <div className="flex flex-wrap gap-1">
                       {model.tags.map((tag) => (
-                        <span key={tag.id} className="rounded-full bg-accent px-2 py-0.5 text-xs">
+                        <span
+                          key={tag.id}
+                          className={cn("rounded-full px-2 py-0.5 text-xs", tagColorClass(tag.color))}
+                        >
                           {tag.name}
                         </span>
                       ))}

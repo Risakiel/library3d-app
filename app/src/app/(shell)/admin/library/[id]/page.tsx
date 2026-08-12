@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Select, SelectOption } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
+import { tagColorClass } from "@/lib/tagColors";
 
 export const dynamic = "force-dynamic";
 
@@ -91,7 +93,13 @@ export default async function LibraryEditPage({ params }: LibraryEditPageProps) 
                 </p>
               )}
               {tags.map((tag) => (
-                <label key={tag.id} className="flex items-center gap-2 text-sm">
+                <label
+                  key={tag.id}
+                  className={cn(
+                    "flex items-center gap-2 rounded-full px-3 py-1 text-sm",
+                    tagColorClass(tag.color),
+                  )}
+                >
                   <input
                     type="checkbox"
                     name="tagIds"

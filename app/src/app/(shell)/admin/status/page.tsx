@@ -17,7 +17,14 @@ export default async function StatusPage() {
 
   return (
     <div className="max-w-2xl space-y-6">
-      <h1 className="text-2xl font-bold">Status</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Status</h1>
+        <form action="/admin/status/seed-defaults" method="post">
+          <Button type="submit" variant="outline" size="sm">
+            Charger la liste par defaut
+          </Button>
+        </form>
+      </div>
 
       <Card>
         <CardContent className="divide-y divide-border p-0">
@@ -60,6 +67,12 @@ export default async function StatusPage() {
                   Renommer
                 </Button>
               </form>
+
+              {status.isDefault && (
+                <span className="whitespace-nowrap rounded-full bg-primary/15 px-2 py-0.5 text-xs text-primary">
+                  Par defaut
+                </span>
+              )}
 
               <span className="whitespace-nowrap text-xs text-muted-foreground">
                 {status._count.models} modele(s)
