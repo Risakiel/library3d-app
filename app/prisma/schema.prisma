@@ -55,7 +55,7 @@ model Model3D {
   tags           Tag[]           @relation("Model3DTags")
   renders        Render[]        @relation("ModelRenders")
   tagSuggestions TagSuggestion[]
-  coverRenderId  String?
+  coverRenderId  String?         @unique
   coverRender    Render?         @relation("ModelCoverRender", fields: [coverRenderId], references: [id], onDelete: SetNull)
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
