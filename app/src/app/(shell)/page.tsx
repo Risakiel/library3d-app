@@ -8,6 +8,7 @@ async function getModels(search: string | undefined) {
     where: search ? { name: { contains: search, mode: "insensitive" } } : undefined,
     orderBy: { name: "asc" },
     include: {
+      coverRender: true,
       renders: { take: 1, orderBy: { filename: "asc" } },
       _count: { select: { renders: true } },
     },
@@ -49,7 +50,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
       <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-5">
         {models.map((model) => {
-          const cover = model.renders[0];
+          const cover = model.coverRender ?? model.renders[0];
           return (
             <Card
               key={model.id}

@@ -53,8 +53,10 @@ model Model3D {
   statusId   String?
   status     Status?   @relation(fields: [statusId], references: [id], onDelete: SetNull)
   tags           Tag[]           @relation("Model3DTags")
-  renders        Render[]
+  renders        Render[]        @relation("ModelRenders")
   tagSuggestions TagSuggestion[]
+  coverRenderId  String?
+  coverRender    Render?         @relation("ModelCoverRender", fields: [coverRenderId], references: [id], onDelete: SetNull)
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
 
@@ -82,7 +84,8 @@ model Render {
   filename     String
   relativePath String   @unique
   modelId      String
-  model        Model3D  @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  model        Model3D  @relation("ModelRenders", fields: [modelId], references: [id], onDelete: Cascade)
+  coverOfModel Model3D? @relation("ModelCoverRender")
   createdAt    DateTime @default(now())
 
   @@index([modelId])
