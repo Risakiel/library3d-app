@@ -21,6 +21,7 @@ async function getModels(search: string | undefined, page: number) {
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
       include: {
+        source: { select: { name: true } },
         coverRender: true,
         renders: { take: 1, orderBy: { filename: "asc" } },
         tags: { select: { id: true, name: true, color: true } },
@@ -76,6 +77,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
     return {
       id: model.id,
       name: model.name,
+      source: model.source.name,
       coverPath: cover?.relativePath ?? null,
       photoCount: model._count.renders,
       tags: model.tags,
