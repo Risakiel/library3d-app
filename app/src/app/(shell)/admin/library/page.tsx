@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,13 +10,24 @@ import { tagColorClass } from "@/lib/tagColors";
 
 export const dynamic = "force-dynamic";
 
-async function getModels(search: string | undefined, sourceId: string | undefined, statusId: string | undefined) {
+interface Filters {
+  search: string | undefined;
+  sourceId: string | undefined;
+  statusId: string | undefined;
+  marketplaceTagId: string | undefined;
+  blueTagId: string | undefined;
+}
+
+async function getModels(filters: Filters) {
+  const conditions: Prisma.Model3DWhereInput[] = [];
+  if (filters.search) conditions.push({ name: { contains: filters.search, mode: "insensitive" } });
+  if (filters.sourceId) conditions.push({ sourceId: filters.sourceId });
+  if (filters.statusId) conditions.push({ statusId: filters.statusId });
+  if (filters.marketplaceTagId) conditions.push({ tags: { some: { id: filters.marketplaceTagId } } });
+  if (filters.blueTagId) conditions.push({ tags: { some: { id: filters.blueTagId } } });
+
   return prisma.model3D.findMany({
-    where: {
-      name: search ? { contains: search, mode: "insensitive" } : undefined,
-      sourceId: sourceId || undefined,
-      statusId: statusId || undefined,
-    },
+    where: conditions.length > 0 ? { AND: conditions } : undefined,
     orderBy: { name: "asc" },
     include: {
       source: true,
@@ -27,19 +39,33 @@ async function getModels(search: string | undefined, sourceId: string | undefine
 }
 
 interface LibraryPageProps {
-  searchParams: { q?: string; sourceId?: string; statusId?: string };
+  searchParams: {
+    q?: string;
+    sourceId?: string;
+    statusId?: string;
+    marketplaceTagId?: string;
+    blueTagId?: string;
+  };
 }
 
 export default async function LibraryPage({ searchParams }: LibraryPageProps) {
-  const search = searchParams.q?.trim() || undefined;
-  const sourceId = searchParams.sourceId || undefined;
-  const statusId = searchParams.statusId || undefined;
+  const filters: Filters = {
+    search: searchParams.q?.trim() || undefined,
+    sourceId: searchParams.sourceId || undefined,
+    statusId: searchParams.statusId || undefined,
+    marketplaceTagId: searchParams.marketplaceTagId || undefined,
+    blueTagId: searchParams.blueTagId || undefined,
+  };
 
-  const [models, sources, statuses] = await Promise.all([
-    getModels(search, sourceId, statusId),
+  const [models, sources, statuses, marketplaceTags, blueTags] = await Promise.all([
+    getModels(filters),
     prisma.source.findMany({ orderBy: { name: "asc" } }),
     prisma.status.findMany({ orderBy: { position: "asc" } }),
+    prisma.tag.findMany({ where: { color: "RED" }, orderBy: { name: "asc" } }),
+    prisma.tag.findMany({ where: { color: "BLUE" }, orderBy: { name: "asc" } }),
   ]);
+
+  const hasFilters = Object.values(filters).some(Boolean);
 
   return (
     <div className="space-y-6">
@@ -49,9 +75,9 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
       </div>
 
       <form action="/admin/library" method="get" className="flex flex-wrap items-center gap-2">
-        <Input name="q" defaultValue={search} placeholder="Rechercher un modele..." className="max-w-sm" />
+        <Input name="q" defaultValue={filters.search} placeholder="Rechercher un modele..." className="max-w-sm" />
 
-        <Select name="sourceId" defaultValue={sourceId ?? ""}>
+        <Select name="sourceId" defaultValue={filters.sourceId ?? ""}>
           <SelectOption value="">Toutes les sources</SelectOption>
           {sources.map((source) => (
             <SelectOption key={source.id} value={source.id}>
@@ -60,7 +86,7 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
           ))}
         </Select>
 
-        <Select name="statusId" defaultValue={statusId ?? ""}>
+        <Select name="statusId" defaultValue={filters.statusId ?? ""}>
           <SelectOption value="">Tous les statuts</SelectOption>
           {statuses.map((status) => (
             <SelectOption key={status.id} value={status.id}>
@@ -69,9 +95,27 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
           ))}
         </Select>
 
+        <Select name="marketplaceTagId" defaultValue={filters.marketplaceTagId ?? ""}>
+          <SelectOption value="">Toutes les marketplaces</SelectOption>
+          {marketplaceTags.map((tag) => (
+            <SelectOption key={tag.id} value={tag.id}>
+              {tag.name}
+            </SelectOption>
+          ))}
+        </Select>
+
+        <Select name="blueTagId" defaultValue={filters.blueTagId ?? ""}>
+          <SelectOption value="">Tous les tags</SelectOption>
+          {blueTags.map((tag) => (
+            <SelectOption key={tag.id} value={tag.id}>
+              {tag.name}
+            </SelectOption>
+          ))}
+        </Select>
+
         <Button type="submit">Rechercher</Button>
 
-        {(search || sourceId || statusId) && (
+        {hasFilters && (
           <Link href="/admin/library" className={buttonVariants({ variant: "outline" })}>
             Reinitialiser
           </Link>
