@@ -14,6 +14,10 @@ async function fetchText(url: string): Promise<string> {
   return response.text();
 }
 
+function uniqueTags(tags: string[]): string[] {
+  return Array.from(new Set(tags.map((tag) => tag.trim()).filter(Boolean)));
+}
+
 interface CGTraderSearchResponse {
   data?: { attributes?: { url?: string; title?: string } }[];
 }
@@ -42,19 +46,71 @@ async function lookupCGTrader(query: string): Promise<MarketplaceLookupResult | 
   const title = $detail("h1").first().text().trim() || firstResult.title || "";
   const tags = $detail(".description-area__related-tag-link")
     .map((_, el) => $detail(el).text().trim())
-    .get()
-    .filter(Boolean);
+    .get();
 
-  return { url: detailUrl, title, tags: Array.from(new Set(tags)) };
+  return { url: detailUrl, title, tags: uniqueTags(tags) };
+}
+
+interface MyMiniFactorySearchResponse {
+  objectResults?: { absolute_url?: string; name?: string }[];
+}
+
+async function lookupMyMiniFactory(query: string): Promise<MarketplaceLookupResult | null> {
+  // L'API de recherche renvoie du JSON directement, meme pour un fetch serveur simple.
+  const searchUrl = `https://www.myminifactory.com/api/search?object=1&bundle=1&premium=1&query=${encodeURIComponent(query)}&sortBy=relevance&page=1`;
+  const searchBody = await fetchText(searchUrl);
+
+  let searchData: MyMiniFactorySearchResponse;
+  try {
+    searchData = JSON.parse(searchBody);
+  } catch {
+    return null;
+  }
+
+  const firstResult = searchData.objectResults?.[0];
+  const detailUrl = firstResult?.absolute_url;
+  if (!detailUrl) return null;
+
+  const detailHtml = await fetchText(detailUrl);
+  const $detail = cheerio.load(detailHtml);
+
+  const tags = $detail('a[href*="/search?tags"]')
+    .map((_, el) => $detail(el).text().trim())
+    .get();
+
+  return { url: detailUrl, title: firstResult.name || "", tags: uniqueTags(tags) };
+}
+
+async function lookupCults3D(query: string): Promise<MarketplaceLookupResult | null> {
+  // La recherche et la fiche produit sont toutes les deux du HTML classique cote serveur.
+  const searchUrl = `https://cults3d.com/en/search?q=${encodeURIComponent(query)}`;
+  const searchHtml = await fetchText(searchUrl);
+  const $search = cheerio.load(searchHtml);
+
+  const href = $search('a[href*="/3d-model/"]').first().attr("href");
+  if (!href) return null;
+
+  const detailUrl = href.startsWith("http") ? href : `https://cults3d.com${href}`;
+  const detailHtml = await fetchText(detailUrl);
+  const $detail = cheerio.load(detailHtml);
+
+  const title = $detail("h1").first().text().trim();
+  const tags = $detail('a[href*="/tags/"]')
+    .map((_, el) => $detail(el).text().trim())
+    .get();
+
+  return { url: detailUrl, title, tags: uniqueTags(tags) };
 }
 
 type LookupFn = (query: string) => Promise<MarketplaceLookupResult | null>;
 
-// Seul CGTrader est verifie pour le moment (structure de page confirmee).
-// Les autres marketplaces (Cults3D, MyMiniFactory, Thingiverse, Gambody) et
-// les pages Patreon des createurs ne sont pas encore supportees.
+// Marketplaces avec structure de page verifiee. Les pages Patreon des
+// createurs individuels ne sont pas des marketplaces publiques et ne sont
+// pas supportees.
 const MARKETPLACE_LOOKUPS: Record<string, LookupFn> = {
   CGTrader: lookupCGTrader,
+  MyMiniFactory: lookupMyMiniFactory,
+  Cults3D: lookupCults3D,
 };
 
 export function isMarketplaceSupported(name: string): boolean {

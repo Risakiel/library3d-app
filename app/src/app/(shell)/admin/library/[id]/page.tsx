@@ -119,9 +119,7 @@ export default async function LibraryEditPage({ params }: LibraryEditPageProps) 
         <div className="flex-1">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">
-                Recherche marketplace{marketplaceTag ? ` (${marketplaceTag.name})` : ""}
-              </CardTitle>
+              <CardTitle className="text-base">Recherche marketplace</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {!marketplaceTag && (
