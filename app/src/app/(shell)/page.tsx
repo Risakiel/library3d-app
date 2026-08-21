@@ -1,30 +1,53 @@
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { Card, CardContent } from "@/components/ui/card";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-async function getModels(search: string | undefined) {
-  return prisma.model3D.findMany({
-    where: {
-      archived: false,
-      name: search ? { contains: search, mode: "insensitive" } : undefined,
-    },
-    orderBy: { name: "asc" },
-    include: {
-      coverRender: true,
-      renders: { take: 1, orderBy: { filename: "asc" } },
-      _count: { select: { renders: true } },
-    },
-  });
+const PAGE_SIZE = 50;
+
+async function getModels(search: string | undefined, page: number) {
+  const where = {
+    archived: false,
+    name: search ? { contains: search, mode: "insensitive" as const } : undefined,
+  };
+
+  const [models, total] = await Promise.all([
+    prisma.model3D.findMany({
+      where,
+      orderBy: { name: "asc" },
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+      include: {
+        coverRender: true,
+        renders: { take: 1, orderBy: { filename: "asc" } },
+        _count: { select: { renders: true } },
+      },
+    }),
+    prisma.model3D.count({ where }),
+  ]);
+
+  return { models, total };
 }
 
 interface HomePageProps {
-  searchParams: { q?: string };
+  searchParams: { q?: string; page?: string };
 }
 
 export default async function HomePage({ searchParams }: HomePageProps) {
   const search = searchParams.q?.trim() || undefined;
-  const models = await getModels(search);
+  const page = Math.max(1, Number(searchParams.page) || 1);
+  const { models, total } = await getModels(search, page);
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  function pageHref(targetPage: number) {
+    const params = new URLSearchParams();
+    if (search) params.set("q", search);
+    params.set("page", String(targetPage));
+    return `/?${params.toString()}`;
+  }
 
   if (models.length === 0) {
     return (
@@ -49,9 +72,14 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-bold">Library3D</h1>
+      <div className="mb-6 flex items-baseline justify-between">
+        <h1 className="text-2xl font-bold">Library3D</h1>
+        <p className="text-sm text-muted-foreground">
+          {total} modele(s) - page {page} sur {totalPages}
+        </p>
+      </div>
 
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-5">
+      <div className="grid grid-cols-5 gap-5">
         {models.map((model) => {
           const cover = model.coverRender ?? model.renders[0];
           return (
@@ -65,6 +93,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                   <img
                     src={`/api/renders/${cover.relativePath}`}
                     alt={model.name}
+                    loading="lazy"
                     className="h-full w-full object-cover"
                   />
                 ) : (
@@ -83,6 +112,32 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           );
         })}
       </div>
+
+      {totalPages > 1 && (
+        <div className="mt-8 flex items-center justify-center gap-3">
+          {page > 1 ? (
+            <Link href={pageHref(page - 1)} className={buttonVariants({ variant: "outline" })}>
+              Precedent
+            </Link>
+          ) : (
+            <span className={cn(buttonVariants({ variant: "outline" }), "pointer-events-none opacity-40")}>
+              Precedent
+            </span>
+          )}
+          <span className="text-sm text-muted-foreground">
+            Page {page} / {totalPages}
+          </span>
+          {page < totalPages ? (
+            <Link href={pageHref(page + 1)} className={buttonVariants({ variant: "outline" })}>
+              Suivant
+            </Link>
+          ) : (
+            <span className={cn(buttonVariants({ variant: "outline" }), "pointer-events-none opacity-40")}>
+              Suivant
+            </span>
+          )}
+        </div>
+      )}
     </div>
   );
 }
