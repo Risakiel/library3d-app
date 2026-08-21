@@ -10,6 +10,8 @@ import { isMarketplaceSupported } from "@/lib/marketplaceLookup";
 
 export const dynamic = "force-dynamic";
 
+const EDIT_FORM_ID = "model-edit-form";
+
 async function getModel(id: string) {
   return prisma.model3D.findUnique({
     where: { id },
@@ -41,36 +43,47 @@ export default async function LibraryEditPage({ params }: LibraryEditPageProps) 
   const marketplaceTag = model.tags.find((tag) => tag.color === "RED" && isMarketplaceSupported(tag.name));
 
   return (
-    <div className="max-w-2xl space-y-6">
-      <div>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
         <Link href="/admin/library" className="text-sm text-primary hover:underline">
           &larr; Retour a la Library
         </Link>
-        <h1 className="mt-2 text-2xl font-bold">{model.name}</h1>
+        <div className="flex items-center gap-3">
+          <Button type="submit" form={EDIT_FORM_ID}>
+            Enregistrer
+          </Button>
+          <Link href="/admin/library" className={buttonVariants({ variant: "outline" })}>
+            Annuler
+          </Link>
+        </div>
+      </div>
+
+      <div>
+        <h1 className="text-2xl font-bold">{model.name}</h1>
         <p className="text-sm text-muted-foreground">Source : {model.source.name}</p>
       </div>
 
-      <div className="grid grid-cols-[160px_1fr] gap-6">
-        <div className="flex aspect-square items-center justify-center overflow-hidden rounded-lg bg-muted">
-          {cover ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={`/api/renders/${cover.relativePath}`}
-              alt={model.name}
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <span className="text-xs text-muted-foreground">Pas de photo</span>
-          )}
-        </div>
+      <form id={EDIT_FORM_ID} action={`/admin/library/${model.id}/update`} method="post" className="space-y-6">
+        <div className="flex gap-6">
+          <div className="flex aspect-square w-40 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-muted">
+            {cover ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={`/api/renders/${cover.relativePath}`}
+                alt={model.name}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <span className="text-xs text-muted-foreground">Pas de photo</span>
+            )}
+          </div>
 
-        <form action={`/admin/library/${model.id}/update`} method="post" className="space-y-6">
-          <Card>
+          <Card className="flex-1">
             <CardHeader>
               <CardTitle className="text-base">Statut</CardTitle>
             </CardHeader>
             <CardContent>
-              <Select name="statusId" defaultValue={model.statusId ?? ""} className="w-full">
+              <Select name="statusId" defaultValue={model.statusId ?? ""} className="w-full max-w-sm">
                 <SelectOption value="">Aucun statut</SelectOption>
                 {statuses.map((status) => (
                   <SelectOption key={status.id} value={status.id}>
@@ -80,50 +93,43 @@ export default async function LibraryEditPage({ params }: LibraryEditPageProps) 
               </Select>
             </CardContent>
           </Card>
+        </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Tags</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-wrap gap-3">
-              {tags.length === 0 && (
-                <p className="text-sm text-muted-foreground">
-                  Aucun tag cree pour le moment -{" "}
-                  <Link href="/admin/tags" className="text-primary hover:underline">
-                    en creer un
-                  </Link>
-                  .
-                </p>
-              )}
-              {tags.map((tag) => (
-                <label
-                  key={tag.id}
-                  className={cn(
-                    "flex items-center gap-2 rounded-full px-3 py-1 text-sm",
-                    tagColorClass(tag.color),
-                  )}
-                >
-                  <input
-                    type="checkbox"
-                    name="tagIds"
-                    value={tag.id}
-                    defaultChecked={modelTagIds.has(tag.id)}
-                    className="h-4 w-4 rounded border-input"
-                  />
-                  {tag.name}
-                </label>
-              ))}
-            </CardContent>
-          </Card>
-
-          <div className="flex items-center gap-3">
-            <Button type="submit">Enregistrer</Button>
-            <Link href="/admin/library" className={buttonVariants({ variant: "outline" })}>
-              Annuler
-            </Link>
-          </div>
-        </form>
-      </div>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Tags</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-wrap gap-3">
+            {tags.length === 0 && (
+              <p className="text-sm text-muted-foreground">
+                Aucun tag cree pour le moment -{" "}
+                <Link href="/admin/tags" className="text-primary hover:underline">
+                  en creer un
+                </Link>
+                .
+              </p>
+            )}
+            {tags.map((tag) => (
+              <label
+                key={tag.id}
+                className={cn(
+                  "flex items-center gap-2 rounded-full px-3 py-1 text-sm",
+                  tagColorClass(tag.color),
+                )}
+              >
+                <input
+                  type="checkbox"
+                  name="tagIds"
+                  value={tag.id}
+                  defaultChecked={modelTagIds.has(tag.id)}
+                  className="h-4 w-4 rounded border-input"
+                />
+                {tag.name}
+              </label>
+            ))}
+          </CardContent>
+        </Card>
+      </form>
 
       {marketplaceTag && (
         <Card>

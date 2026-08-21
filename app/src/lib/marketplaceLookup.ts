@@ -8,25 +8,38 @@ export interface MarketplaceLookupResult {
 
 const USER_AGENT = "Mozilla/5.0 (compatible; Library3DBot/1.0)";
 
-async function fetchHtml(url: string): Promise<string> {
+async function fetchText(url: string): Promise<string> {
   const response = await fetch(url, { headers: { "User-Agent": USER_AGENT } });
   if (!response.ok) throw new Error(`HTTP ${response.status} pour ${url}`);
   return response.text();
 }
 
+interface CGTraderSearchResponse {
+  data?: { attributes?: { url?: string; title?: string } }[];
+}
+
 async function lookupCGTrader(query: string): Promise<MarketplaceLookupResult | null> {
+  // La page de recherche renvoie du JSON brut (pas du HTML) a une requete
+  // serveur simple - on parse directement ce JSON plutot que le DOM.
   const searchUrl = `https://www.cgtrader.com/search?keywords=${encodeURIComponent(query)}`;
-  const searchHtml = await fetchHtml(searchUrl);
-  const $search = cheerio.load(searchHtml);
+  const searchBody = await fetchText(searchUrl);
 
-  const href = $search("a.cgt-model-card__link").first().attr("href");
-  if (!href) return null;
+  let searchData: CGTraderSearchResponse;
+  try {
+    searchData = JSON.parse(searchBody);
+  } catch {
+    return null;
+  }
 
-  const detailUrl = href.startsWith("http") ? href : `https://www.cgtrader.com${href}`;
-  const detailHtml = await fetchHtml(detailUrl);
+  const firstResult = searchData.data?.[0]?.attributes;
+  const detailUrl = firstResult?.url;
+  if (!detailUrl) return null;
+
+  // La fiche produit, elle, est bien du HTML classique.
+  const detailHtml = await fetchText(detailUrl);
   const $detail = cheerio.load(detailHtml);
 
-  const title = $detail("h1").first().text().trim();
+  const title = $detail("h1").first().text().trim() || firstResult.title || "";
   const tags = $detail(".description-area__related-tag-link")
     .map((_, el) => $detail(el).text().trim())
     .get()
