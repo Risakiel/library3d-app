@@ -83,35 +83,63 @@ export default async function DashboardPage() {
         ))}
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Repartition par statut</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {statusBreakdown.map((status) => (
-            <div key={status.id} className="flex items-center gap-3">
-              <span className="w-32 truncate text-sm">{status.name}</span>
+      <div className="grid gap-6 sm:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Repartition par statut</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {statusBreakdown.map((status) => (
+              <div key={status.id} className="flex items-center gap-3">
+                <span className="w-32 truncate text-sm">{status.name}</span>
+                <div className="h-2 flex-1 rounded-full bg-muted">
+                  <div
+                    className="h-2 rounded-full bg-primary"
+                    style={{ width: `${(status._count.models / maxCount) * 100}%` }}
+                  />
+                </div>
+                <span className="w-8 text-right text-sm text-muted-foreground">{status._count.models}</span>
+              </div>
+            ))}
+            <div className="flex items-center gap-3">
+              <span className="w-32 truncate text-sm text-muted-foreground">Sans statut</span>
               <div className="h-2 flex-1 rounded-full bg-muted">
                 <div
-                  className="h-2 rounded-full bg-primary"
-                  style={{ width: `${(status._count.models / maxCount) * 100}%` }}
+                  className="h-2 rounded-full bg-muted-foreground/40"
+                  style={{ width: `${(withoutStatus / maxCount) * 100}%` }}
                 />
               </div>
-              <span className="w-8 text-right text-sm text-muted-foreground">{status._count.models}</span>
+              <span className="w-8 text-right text-sm text-muted-foreground">{withoutStatus}</span>
             </div>
-          ))}
-          <div className="flex items-center gap-3">
-            <span className="w-32 truncate text-sm text-muted-foreground">Sans statut</span>
-            <div className="h-2 flex-1 rounded-full bg-muted">
-              <div
-                className="h-2 rounded-full bg-muted-foreground/40"
-                style={{ width: `${(withoutStatus / maxCount) * 100}%` }}
-              />
-            </div>
-            <span className="w-8 text-right text-sm text-muted-foreground">{withoutStatus}</span>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Top des tags</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {topBlueTags.length === 0 && (
+              <p className="text-sm text-muted-foreground">Aucun tag pour le moment.</p>
+            )}
+            {topBlueTags.map((tag, index) => (
+              <div key={tag.id} className="flex items-center gap-3">
+                <span className="w-5 text-sm text-muted-foreground">{index + 1}</span>
+                <span className="w-32 truncate text-sm">{tag.name}</span>
+                <div className="h-2 flex-1 rounded-full bg-muted">
+                  <div
+                    className="h-2 rounded-full bg-blue-500"
+                    style={{
+                      width: `${(tag._count.models / Math.max(topBlueTags[0]?._count.models ?? 1, 1)) * 100}%`,
+                    }}
+                  />
+                </div>
+                <span className="w-8 text-right text-sm text-muted-foreground">{tag._count.models}</span>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
 
       <div className="grid gap-6 sm:grid-cols-2">
         <Card>
@@ -145,32 +173,6 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
       </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Top des tags</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {topBlueTags.length === 0 && (
-            <p className="text-sm text-muted-foreground">Aucun tag pour le moment.</p>
-          )}
-          {topBlueTags.map((tag, index) => (
-            <div key={tag.id} className="flex items-center gap-3">
-              <span className="w-5 text-sm text-muted-foreground">{index + 1}</span>
-              <span className="w-40 truncate text-sm">{tag.name}</span>
-              <div className="h-2 flex-1 rounded-full bg-muted">
-                <div
-                  className="h-2 rounded-full bg-blue-500"
-                  style={{
-                    width: `${(tag._count.models / Math.max(topBlueTags[0]?._count.models ?? 1, 1)) * 100}%`,
-                  }}
-                />
-              </div>
-              <span className="w-8 text-right text-sm text-muted-foreground">{tag._count.models}</span>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
     </div>
   );
 }

@@ -10,6 +10,15 @@ import { tagColorClass } from "@/lib/tagColors";
 
 export const dynamic = "force-dynamic";
 
+const TAG_COLOR_ORDER = { RED: 0, GREEN: 1, BLUE: 2 } as const;
+
+function sortTagsByColor<T extends { color: keyof typeof TAG_COLOR_ORDER; name: string }>(tags: T[]) {
+  return [...tags].sort((a, b) => {
+    const colorDiff = TAG_COLOR_ORDER[a.color] - TAG_COLOR_ORDER[b.color];
+    return colorDiff !== 0 ? colorDiff : a.name.localeCompare(b.name);
+  });
+}
+
 interface Filters {
   search: string | undefined;
   sourceId: string | undefined;
@@ -149,7 +158,7 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
                   </td>
                   <td className="p-3">
                     <div className="flex flex-wrap gap-1">
-                      {model.tags.map((tag) => (
+                      {sortTagsByColor(model.tags).map((tag) => (
                         <span
                           key={tag.id}
                           className={cn("rounded-full px-2 py-0.5 text-xs", tagColorClass(tag.color))}
