@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { tagColorClass } from "@/lib/tagColors";
+import { tagColorSolidClass } from "@/lib/tagColors";
 
 const TAG_COLOR_ORDER = { RED: 0, GREEN: 1, BLUE: 2 } as const;
 const MAX_VISIBLE_TAGS = 4;
@@ -84,7 +84,7 @@ export function ModelGrid({ models }: { models: ModelCardData[] }) {
                         key={tag.id}
                         className={cn(
                           "rounded-full px-1.5 py-0.5 text-[10px] leading-none",
-                          tagColorClass(tag.color),
+                          tagColorSolidClass(tag.color),
                         )}
                       >
                         {tag.name}

@@ -7,3 +7,15 @@ const TAG_COLOR_CLASSES = {
 export function tagColorClass(color: keyof typeof TAG_COLOR_CLASSES) {
   return TAG_COLOR_CLASSES[color];
 }
+
+// Variante a fond noir opaque, pour les badges affiches par-dessus une photo
+// (le fond teinte translucide de tagColorClass y est illisible).
+const TAG_COLOR_SOLID_CLASSES = {
+  RED: "bg-black/70 text-red-400",
+  GREEN: "bg-black/70 text-emerald-400",
+  BLUE: "bg-black/70 text-blue-400",
+} as const;
+
+export function tagColorSolidClass(color: keyof typeof TAG_COLOR_SOLID_CLASSES) {
+  return TAG_COLOR_SOLID_CLASSES[color];
+}
