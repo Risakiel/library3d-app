@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { Card, CardContent } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { ModelGrid, type ModelCardData } from "@/components/ModelGrid";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +23,7 @@ async function getModels(search: string | undefined, page: number) {
       include: {
         coverRender: true,
         renders: { take: 1, orderBy: { filename: "asc" } },
+        tags: { select: { id: true, name: true, color: true } },
         _count: { select: { renders: true } },
       },
     }),
@@ -70,6 +71,17 @@ export default async function HomePage({ searchParams }: HomePageProps) {
     );
   }
 
+  const cardModels: ModelCardData[] = models.map((model) => {
+    const cover = model.coverRender ?? model.renders[0] ?? null;
+    return {
+      id: model.id,
+      name: model.name,
+      coverPath: cover?.relativePath ?? null,
+      photoCount: model._count.renders,
+      tags: model.tags,
+    };
+  });
+
   return (
     <div>
       <div className="mb-6 flex items-baseline justify-between">
@@ -79,39 +91,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         </p>
       </div>
 
-      <div className="grid grid-cols-5 gap-5">
-        {models.map((model) => {
-          const cover = model.coverRender ?? model.renders[0];
-          return (
-            <Card
-              key={model.id}
-              className="overflow-hidden transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-lg"
-            >
-              <div className="relative flex aspect-square items-center justify-center bg-muted">
-                {cover ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={`/api/renders/${cover.relativePath}`}
-                    alt={model.name}
-                    loading="lazy"
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <span className="text-sm text-muted-foreground">Pas de photo</span>
-                )}
-                {model._count.renders > 0 && (
-                  <span className="absolute left-2 top-2 rounded-full bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground">
-                    {model._count.renders} photo{model._count.renders > 1 ? "s" : ""}
-                  </span>
-                )}
-              </div>
-              <CardContent className="p-3">
-                <p className="truncate text-sm font-medium">{model.name}</p>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+      <ModelGrid models={cardModels} />
 
       {totalPages > 1 && (
         <div className="mt-8 flex items-center justify-center gap-3">
