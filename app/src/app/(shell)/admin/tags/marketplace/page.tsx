@@ -15,13 +15,13 @@ async function getModelsWithSuggestions() {
   });
 }
 
-export default async function ReviewTagsPage() {
+export default async function TagsMarketplacePage() {
   const models = await getModelsWithSuggestions();
 
   return (
     <div className="max-w-2xl space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Suggestions de tags en attente</h1>
+        <h1 className="text-2xl font-bold">Tags Marketplace</h1>
         <p className="text-sm text-muted-foreground">{models.length} modele(s) a valider</p>
       </div>
 
@@ -53,7 +53,7 @@ export default async function ReviewTagsPage() {
               method="post"
               className="space-y-3"
             >
-              <input type="hidden" name="returnTo" value="/admin/library/review-tags" />
+              <input type="hidden" name="returnTo" value="/admin/tags/marketplace" />
               <div className="flex flex-wrap gap-3">
                 {model.tagSuggestions.map((suggestion) => (
                   <label

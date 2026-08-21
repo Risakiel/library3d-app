@@ -35,6 +35,6 @@ export async function POST(_request: Request, { params }: { params: { id: string
 
   return new NextResponse(null, {
     status: 303,
-    headers: { Location: "/admin/library/review-tags" },
+    headers: { Location: "/admin/tags/marketplace" },
   });
 }

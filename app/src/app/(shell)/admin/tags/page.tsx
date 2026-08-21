@@ -35,8 +35,8 @@ export default async function TagsPage() {
           <Link href="/admin/tags/duplicates" className="text-sm text-primary hover:underline">
             Doublons
           </Link>
-          <Link href="/admin/library/review-tags" className="text-sm text-primary hover:underline">
-            Suggestions en attente
+          <Link href="/admin/tags/marketplace" className="text-sm text-primary hover:underline">
+            Tags Marketplace
           </Link>
           <form action="/admin/tags/detect-from-names" method="post">
             <Button type="submit" variant="outline" size="sm">
