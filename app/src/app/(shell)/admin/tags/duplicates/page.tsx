@@ -4,23 +4,17 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { tagColorClass } from "@/lib/tagColors";
+import { normalizeTagName, sortByName } from "@/lib/tags";
 
 export const dynamic = "force-dynamic";
 
-function normalizeTagName(name: string) {
-  return name
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/\p{Diacritic}/gu, "")
-    .replace(/[^a-z0-9]/g, "");
-}
-
 async function getDuplicateClusters() {
-  const tags = await prisma.tag.findMany({
-    where: { archived: false },
-    orderBy: { name: "asc" },
-    include: { _count: { select: { models: true } } },
-  });
+  const tags = sortByName(
+    await prisma.tag.findMany({
+      where: { archived: false },
+      include: { _count: { select: { models: true } } },
+    }),
+  );
 
   const groups = new Map<string, typeof tags>();
   for (const tag of tags) {

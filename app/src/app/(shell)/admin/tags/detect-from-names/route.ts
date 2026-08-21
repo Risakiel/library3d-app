@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { findOrCreateTag } from "@/lib/tags";
 
 export async function POST() {
   const models = await prisma.model3D.findMany({ select: { id: true, name: true } });
@@ -15,11 +16,8 @@ export async function POST() {
     const franchiseName = parts[1].trim();
     if (!franchiseName) continue;
 
-    const tag = await prisma.tag.upsert({
-      where: { name: franchiseName },
-      update: {},
-      create: { name: franchiseName, color: "BLUE" },
-    });
+    const tag = await findOrCreateTag(franchiseName, "BLUE");
+    if (!tag) continue;
 
     await prisma.model3D.update({
       where: { id: model.id },

@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { tagColorClass } from "@/lib/tagColors";
 import { isMarketplaceSupported } from "@/lib/marketplaceLookup";
+import { sortByName } from "@/lib/tags";
 
 export const dynamic = "force-dynamic";
 
@@ -17,13 +18,12 @@ const GROUPS = [
 
 async function getTags() {
   return prisma.tag.findMany({
-    orderBy: { name: "asc" },
     include: { _count: { select: { models: true } } },
   });
 }
 
 export default async function TagsPage() {
-  const tags = await getTags();
+  const tags = sortByName(await getTags());
   const activeTags = tags.filter((tag) => !tag.archived);
   const archivedTags = tags.filter((tag) => tag.archived);
 

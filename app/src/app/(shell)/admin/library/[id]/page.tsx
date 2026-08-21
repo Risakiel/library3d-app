@@ -7,11 +7,11 @@ import { Select, SelectOption } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { tagColorClass } from "@/lib/tagColors";
 import { isMarketplaceSupported } from "@/lib/marketplaceLookup";
+import { sortTagsByColorThenName } from "@/lib/tags";
 
 export const dynamic = "force-dynamic";
 
 const EDIT_FORM_ID = "model-edit-form";
-const TAG_COLOR_ORDER = { RED: 0, GREEN: 1, BLUE: 2 } as const;
 
 async function getModel(id: string) {
   return prisma.model3D.findUnique({
@@ -47,10 +47,7 @@ export default async function LibraryEditPage({ params }: LibraryEditPageProps) 
   const modelTagIds = new Set(model.tags.map((tag) => tag.id));
   const marketplaceTag = model.tags.find((tag) => tag.color === "RED" && isMarketplaceSupported(tag.name));
 
-  const sortedTags = [...tags].sort((a, b) => {
-    const colorDiff = TAG_COLOR_ORDER[a.color] - TAG_COLOR_ORDER[b.color];
-    return colorDiff !== 0 ? colorDiff : a.name.localeCompare(b.name);
-  });
+  const sortedTags = sortTagsByColorThenName(tags);
 
   return (
     <div className="space-y-6">

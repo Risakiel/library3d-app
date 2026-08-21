@@ -7,17 +7,9 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Select, SelectOption } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { tagColorClass } from "@/lib/tagColors";
+import { sortByName, sortTagsByColorThenName } from "@/lib/tags";
 
 export const dynamic = "force-dynamic";
-
-const TAG_COLOR_ORDER = { RED: 0, GREEN: 1, BLUE: 2 } as const;
-
-function sortTagsByColor<T extends { color: keyof typeof TAG_COLOR_ORDER; name: string }>(tags: T[]) {
-  return [...tags].sort((a, b) => {
-    const colorDiff = TAG_COLOR_ORDER[a.color] - TAG_COLOR_ORDER[b.color];
-    return colorDiff !== 0 ? colorDiff : a.name.localeCompare(b.name);
-  });
-}
 
 interface Filters {
   search: string | undefined;
@@ -70,13 +62,17 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
     includeArchived: searchParams.includeArchived === "1",
   };
 
-  const [models, sources, statuses, marketplaceTags, blueTags] = await Promise.all([
+  const [models, sourcesRaw, statuses, marketplaceTagsRaw, blueTagsRaw] = await Promise.all([
     getModels(filters),
-    prisma.source.findMany({ orderBy: { name: "asc" } }),
+    prisma.source.findMany(),
     prisma.status.findMany({ orderBy: { position: "asc" } }),
-    prisma.tag.findMany({ where: { color: "RED", archived: false }, orderBy: { name: "asc" } }),
-    prisma.tag.findMany({ where: { color: "BLUE", archived: false }, orderBy: { name: "asc" } }),
+    prisma.tag.findMany({ where: { color: "RED", archived: false } }),
+    prisma.tag.findMany({ where: { color: "BLUE", archived: false } }),
   ]);
+
+  const sources = sortByName(sourcesRaw);
+  const marketplaceTags = sortByName(marketplaceTagsRaw);
+  const blueTags = sortByName(blueTagsRaw);
 
   const hasFilters =
     Boolean(filters.search) ||
@@ -189,7 +185,7 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
                   </td>
                   <td className="p-3">
                     <div className="flex flex-wrap gap-1">
-                      {sortTagsByColor(model.tags).map((tag) => (
+                      {sortTagsByColorThenName(model.tags).map((tag) => (
                         <span
                           key={tag.id}
                           className={cn("rounded-full px-2 py-0.5 text-xs", tagColorClass(tag.color))}
