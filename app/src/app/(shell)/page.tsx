@@ -5,7 +5,10 @@ export const dynamic = "force-dynamic";
 
 async function getModels(search: string | undefined) {
   return prisma.model3D.findMany({
-    where: search ? { name: { contains: search, mode: "insensitive" } } : undefined,
+    where: {
+      archived: false,
+      name: search ? { contains: search, mode: "insensitive" } : undefined,
+    },
     orderBy: { name: "asc" },
     include: {
       coverRender: true,

@@ -25,6 +25,7 @@ interface Filters {
   statusId: string | undefined;
   marketplaceTagId: string | undefined;
   blueTagId: string | undefined;
+  includeArchived: boolean;
 }
 
 async function getModels(filters: Filters) {
@@ -34,6 +35,7 @@ async function getModels(filters: Filters) {
   if (filters.statusId) conditions.push({ statusId: filters.statusId });
   if (filters.marketplaceTagId) conditions.push({ tags: { some: { id: filters.marketplaceTagId } } });
   if (filters.blueTagId) conditions.push({ tags: { some: { id: filters.blueTagId } } });
+  if (!filters.includeArchived) conditions.push({ archived: false });
 
   return prisma.model3D.findMany({
     where: conditions.length > 0 ? { AND: conditions } : undefined,
@@ -54,6 +56,7 @@ interface LibraryPageProps {
     statusId?: string;
     marketplaceTagId?: string;
     blueTagId?: string;
+    includeArchived?: string;
   };
 }
 
@@ -64,17 +67,24 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
     statusId: searchParams.statusId || undefined,
     marketplaceTagId: searchParams.marketplaceTagId || undefined,
     blueTagId: searchParams.blueTagId || undefined,
+    includeArchived: searchParams.includeArchived === "1",
   };
 
   const [models, sources, statuses, marketplaceTags, blueTags] = await Promise.all([
     getModels(filters),
     prisma.source.findMany({ orderBy: { name: "asc" } }),
     prisma.status.findMany({ orderBy: { position: "asc" } }),
-    prisma.tag.findMany({ where: { color: "RED" }, orderBy: { name: "asc" } }),
-    prisma.tag.findMany({ where: { color: "BLUE" }, orderBy: { name: "asc" } }),
+    prisma.tag.findMany({ where: { color: "RED", archived: false }, orderBy: { name: "asc" } }),
+    prisma.tag.findMany({ where: { color: "BLUE", archived: false }, orderBy: { name: "asc" } }),
   ]);
 
-  const hasFilters = Object.values(filters).some(Boolean);
+  const hasFilters =
+    Boolean(filters.search) ||
+    Boolean(filters.sourceId) ||
+    Boolean(filters.statusId) ||
+    Boolean(filters.marketplaceTagId) ||
+    Boolean(filters.blueTagId) ||
+    filters.includeArchived;
 
   return (
     <div className="space-y-6">
@@ -122,6 +132,17 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
           ))}
         </Select>
 
+        <label className="flex items-center gap-2 text-sm text-muted-foreground">
+          <input
+            type="checkbox"
+            name="includeArchived"
+            value="1"
+            defaultChecked={filters.includeArchived}
+            className="h-4 w-4 rounded border-input"
+          />
+          Inclure les archives
+        </label>
+
         <Button type="submit">Rechercher</Button>
 
         {hasFilters && (
@@ -146,8 +167,18 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
             </thead>
             <tbody>
               {models.map((model) => (
-                <tr key={model.id} className="border-b border-border last:border-0">
-                  <td className="p-3 font-medium">{model.name}</td>
+                <tr
+                  key={model.id}
+                  className={cn("border-b border-border last:border-0", model.archived && "opacity-50")}
+                >
+                  <td className="p-3 font-medium">
+                    {model.name}
+                    {model.archived && (
+                      <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-xs font-normal text-muted-foreground">
+                        Archive
+                      </span>
+                    )}
+                  </td>
                   <td className="p-3 text-muted-foreground">{model.source.name}</td>
                   <td className="p-3">
                     {model.status ? (

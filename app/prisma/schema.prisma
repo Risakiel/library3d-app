@@ -39,6 +39,7 @@ model Tag {
   id        String    @id @default(cuid())
   name      String    @unique
   color     TagColor  @default(BLUE)
+  archived  Boolean   @default(false)
   createdAt DateTime  @default(now())
   models    Model3D[] @relation("Model3DTags")
 }
@@ -48,6 +49,7 @@ model Model3D {
   name       String
   // Chemin relatif depuis la racine NAS, ex: "Bulkamancer/Albedo-Overlord"
   folderPath String    @unique
+  archived   Boolean   @default(false)
   sourceId   String
   source     Source    @relation(fields: [sourceId], references: [id], onDelete: Cascade)
   statusId   String?

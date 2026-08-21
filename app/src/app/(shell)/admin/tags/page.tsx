@@ -24,12 +24,17 @@ async function getTags() {
 
 export default async function TagsPage() {
   const tags = await getTags();
+  const activeTags = tags.filter((tag) => !tag.archived);
+  const archivedTags = tags.filter((tag) => tag.archived);
 
   return (
     <div className="max-w-2xl space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Tags</h1>
         <div className="flex items-center gap-2">
+          <Link href="/admin/tags/duplicates" className="text-sm text-primary hover:underline">
+            Doublons
+          </Link>
           <Link href="/admin/library/review-tags" className="text-sm text-primary hover:underline">
             Suggestions en attente
           </Link>
@@ -42,7 +47,7 @@ export default async function TagsPage() {
       </div>
 
       {GROUPS.map((group) => {
-        const groupTags = tags.filter((tag) => tag.color === group.color);
+        const groupTags = activeTags.filter((tag) => tag.color === group.color);
         return (
           <Card key={group.color}>
             <CardContent className="divide-y divide-border p-0">
@@ -77,6 +82,11 @@ export default async function TagsPage() {
                       </Button>
                     </form>
                   )}
+                  <form action={`/admin/tags/${tag.id}/archive`} method="post">
+                    <Button type="submit" variant="outline" size="sm">
+                      Archiver
+                    </Button>
+                  </form>
                   <form action={`/admin/tags/${tag.id}/delete`} method="post">
                     <Button type="submit" variant="outline" size="sm">
                       Supprimer
@@ -99,6 +109,36 @@ export default async function TagsPage() {
             Les tags marketplace/createur sont crees et colores automatiquement a chaque scan. Renommer un
             tag vers un nom existant fusionne les deux automatiquement.
           </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="divide-y divide-border p-0">
+          <div className="flex items-center gap-2 p-3">
+            <span className="text-sm font-medium">Tags archives</span>
+            <span className="text-xs text-muted-foreground">{archivedTags.length} tag(s)</span>
+          </div>
+          {archivedTags.length === 0 && (
+            <p className="p-4 text-sm text-muted-foreground">Aucun tag archive.</p>
+          )}
+          {archivedTags.map((tag) => (
+            <div key={tag.id} className="flex items-center gap-3 p-3">
+              <span className={cn("rounded-full px-2 py-0.5 text-xs", tagColorClass(tag.color))}>
+                {tag.name}
+              </span>
+              <span className="flex-1 text-xs text-muted-foreground">{tag._count.models} modele(s)</span>
+              <form action={`/admin/tags/${tag.id}/unarchive`} method="post">
+                <Button type="submit" variant="secondary" size="sm">
+                  Desarchiver
+                </Button>
+              </form>
+              <form action={`/admin/tags/${tag.id}/delete`} method="post">
+                <Button type="submit" variant="outline" size="sm">
+                  Supprimer
+                </Button>
+              </form>
+            </div>
+          ))}
         </CardContent>
       </Card>
     </div>

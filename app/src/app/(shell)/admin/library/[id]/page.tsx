@@ -37,7 +37,10 @@ export default async function LibraryEditPage({ params }: LibraryEditPageProps) 
 
   const [statuses, tags] = await Promise.all([
     prisma.status.findMany({ orderBy: { position: "asc" } }),
-    prisma.tag.findMany({ orderBy: { name: "asc" } }),
+    prisma.tag.findMany({
+      where: { OR: [{ archived: false }, { id: { in: model.tags.map((tag) => tag.id) } }] },
+      orderBy: { name: "asc" },
+    }),
   ]);
 
   const cover = model.coverRender ?? model.renders[0] ?? null;
@@ -56,6 +59,11 @@ export default async function LibraryEditPage({ params }: LibraryEditPageProps) 
           &larr; Retour a la Library
         </Link>
         <div className="flex items-center gap-3">
+          <form action={`/admin/library/${model.id}/toggle-archive`} method="post">
+            <Button type="submit" variant="outline">
+              {model.archived ? "Desarchiver" : "Archiver"}
+            </Button>
+          </form>
           <Button type="submit" form={EDIT_FORM_ID}>
             Enregistrer
           </Button>
@@ -66,7 +74,14 @@ export default async function LibraryEditPage({ params }: LibraryEditPageProps) 
       </div>
 
       <div>
-        <h1 className="text-2xl font-bold">{model.name}</h1>
+        <h1 className="text-2xl font-bold">
+          {model.name}
+          {model.archived && (
+            <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-xs font-normal text-muted-foreground">
+              Archive
+            </span>
+          )}
+        </h1>
         <p className="text-sm text-muted-foreground">Source : {model.source.name}</p>
       </div>
 
