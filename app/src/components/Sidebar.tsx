@@ -108,7 +108,7 @@ export function Sidebar({
         ))}
 
       {!isAdmin && (
-        <form action="/" method="get" className="flex flex-col gap-4">
+        <form key={searchParams.toString()} action="/" method="get" className="flex flex-col gap-4">
           <input
             type="search"
             name="q"
@@ -131,7 +131,11 @@ export function Sidebar({
             </select>
           </div>
 
-          <div className="flex flex-col gap-2">
+          <CheckboxGroup label="Marketplace" name="marketplace" options={marketplaceTags} selected={selectedMarketplace} />
+          <CheckboxGroup label="Site" name="site" options={siteTags} selected={selectedSites} />
+          <CheckboxGroup label="Tags" name="tag" options={blueTags} selected={selectedTags} />
+
+          <div className="flex flex-col gap-2 border-t border-sidebar-accent pt-4">
             <button
               type="submit"
               className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
@@ -145,10 +149,6 @@ export function Sidebar({
               Reinitialiser
             </Link>
           </div>
-
-          <CheckboxGroup label="Marketplace" name="marketplace" options={marketplaceTags} selected={selectedMarketplace} />
-          <CheckboxGroup label="Site" name="site" options={siteTags} selected={selectedSites} />
-          <CheckboxGroup label="Tags" name="tag" options={blueTags} selected={selectedTags} />
         </form>
       )}
     </nav>
