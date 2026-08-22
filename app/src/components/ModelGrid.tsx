@@ -8,6 +8,7 @@ import { tagColorSolidClass } from "@/lib/tagColors";
 const TAG_COLOR_ORDER = { RED: 0, GREEN: 1, BLUE: 2 } as const;
 const MAX_VISIBLE_TAGS = 4;
 const COLUMNS = 6;
+const GRID_GAP_PX = 20; // gap-5
 
 export interface ModelCardData {
   id: string;
@@ -23,7 +24,20 @@ export function ModelGrid({ models }: { models: ModelCardData[] }) {
   const [images, setImages] = useState<string[]>([]);
   const [index, setIndex] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [rowHeight, setRowHeight] = useState<number | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
+  const firstCardRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    function measure() {
+      if (firstCardRef.current) {
+        setRowHeight(firstCardRef.current.offsetHeight);
+      }
+    }
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [previewModelId]);
 
   useEffect(() => {
     if (previewModelId) {
@@ -64,6 +78,9 @@ export function ModelGrid({ models }: { models: ModelCardData[] }) {
       ? -1
       : Math.min(Math.floor(previewIndex / COLUMNS) * COLUMNS + COLUMNS - 1, models.length - 1);
 
+  // Hauteur du panneau = exactement 2 lignes de cartes + la marge entre elles.
+  const panelHeight = rowHeight ? rowHeight * 2 + GRID_GAP_PX : null;
+
   return (
     <div className="grid grid-cols-6 gap-5">
       {models.map((model, modelIndex) => {
@@ -76,7 +93,10 @@ export function ModelGrid({ models }: { models: ModelCardData[] }) {
 
         return (
           <Fragment key={model.id}>
-            <Card className="overflow-hidden transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-lg">
+            <Card
+              ref={modelIndex === 0 ? firstCardRef : undefined}
+              className="overflow-hidden transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-lg"
+            >
               <div className="group relative flex aspect-square items-center justify-center bg-muted">
                 {model.coverPath ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -144,6 +164,7 @@ export function ModelGrid({ models }: { models: ModelCardData[] }) {
                   index={index}
                   onIndexChange={setIndex}
                   onClose={closePreview}
+                  height={panelHeight}
                 />
               </div>
             )}
@@ -161,18 +182,19 @@ interface PreviewPanelProps {
   index: number;
   onIndexChange: (index: number) => void;
   onClose: () => void;
+  height: number | null;
 }
 
-function PreviewPanel({ model, images, loading, index, onIndexChange, onClose }: PreviewPanelProps) {
+function PreviewPanel({ model, images, loading, index, onIndexChange, onClose, height }: PreviewPanelProps) {
   const sortedTags = [...model.tags].sort(
     (a, b) => TAG_COLOR_ORDER[a.color] - TAG_COLOR_ORDER[b.color],
   );
 
   return (
-    <Card className="my-2 overflow-hidden">
-      <div className="grid grid-cols-12 gap-4 p-4">
-        <div className="col-span-12 md:col-span-9">
-          <div className="relative flex h-[380px] items-center justify-center overflow-hidden rounded-lg bg-black">
+    <Card className="my-2 overflow-hidden" style={height ? { height } : undefined}>
+      <div className="grid h-full grid-cols-12 gap-4 p-4">
+        <div className="col-span-12 flex h-full min-h-0 flex-col md:col-span-9">
+          <div className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-lg bg-black">
             {loading || images.length === 0 ? (
               <span className="text-sm text-muted-foreground">
                 {loading ? "Chargement..." : "Aucune photo."}
@@ -221,7 +243,7 @@ function PreviewPanel({ model, images, loading, index, onIndexChange, onClose }:
           </div>
 
           {images.length > 1 && (
-            <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
+            <div className="mt-2 flex h-14 shrink-0 gap-2 overflow-x-auto pb-1">
               {images.map((imagePath, imageIndex) => (
                 <button
                   key={imagePath}
@@ -244,7 +266,7 @@ function PreviewPanel({ model, images, loading, index, onIndexChange, onClose }:
           )}
         </div>
 
-        <div className="col-span-12 h-[380px] overflow-y-auto md:col-span-3">
+        <div className="col-span-12 h-full overflow-y-auto md:col-span-3">
           <h3 className="text-lg font-bold">{model.name}</h3>
           <p className="mt-1 text-sm text-muted-foreground">Source : {model.source}</p>
           <p className="mt-1 text-sm text-muted-foreground">
