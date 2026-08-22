@@ -8,10 +8,11 @@ export const dynamic = "force-dynamic";
 
 const PAGE_SIZE = 50;
 
-async function getModels(search: string | undefined, page: number) {
+async function getModels(search: string | undefined, statusId: string | undefined, page: number) {
   const where = {
     archived: false,
     name: search ? { contains: search, mode: "insensitive" as const } : undefined,
+    statusId: statusId || undefined,
   };
 
   const [models, total] = await Promise.all([
@@ -49,14 +50,15 @@ async function getEditableOptions() {
 }
 
 interface HomePageProps {
-  searchParams: { q?: string; page?: string };
+  searchParams: { q?: string; statusId?: string; page?: string };
 }
 
 export default async function HomePage({ searchParams }: HomePageProps) {
   const search = searchParams.q?.trim() || undefined;
+  const statusFilter = searchParams.statusId || undefined;
   const page = Math.max(1, Number(searchParams.page) || 1);
   const [{ models, total }, { statuses, blueTags }] = await Promise.all([
-    getModels(search, page),
+    getModels(search, statusFilter, page),
     getEditableOptions(),
   ]);
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -64,6 +66,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   function pageHref(targetPage: number) {
     const params = new URLSearchParams();
     if (search) params.set("q", search);
+    if (statusFilter) params.set("statusId", statusFilter);
     params.set("page", String(targetPage));
     return `/?${params.toString()}`;
   }

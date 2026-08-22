@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 interface SidebarProps {
   isAdmin: boolean;
+  statuses?: { id: string; name: string }[];
 }
 
 interface NavItem {
@@ -34,8 +35,12 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
   { href: "/admin/settings", label: "Parametres" },
 ];
 
-export function Sidebar({ isAdmin }: SidebarProps) {
+const inputClass =
+  "w-full rounded-md border border-sidebar-accent bg-sidebar-accent/40 px-3 py-2 text-sm text-sidebar-foreground placeholder:text-sidebar-foreground/50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary";
+
+export function Sidebar({ isAdmin, statuses = [] }: SidebarProps) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const navItems = isAdmin ? ADMIN_NAV_ITEMS : GUEST_NAV_ITEMS;
   const homeHref = isAdmin ? "/admin" : "/";
 
@@ -84,6 +89,40 @@ export function Sidebar({ isAdmin }: SidebarProps) {
           )}
         </div>
       ))}
+
+      {!isAdmin && (
+        <form
+          action="/"
+          method="get"
+          className="mt-4 flex flex-col gap-2 border-t border-sidebar-accent pt-4"
+        >
+          <input
+            type="search"
+            name="q"
+            defaultValue={searchParams.get("q") ?? ""}
+            placeholder="Rechercher un modele..."
+            className={inputClass}
+          />
+
+          <select name="statusId" defaultValue={searchParams.get("statusId") ?? ""} className={inputClass}>
+            <option value="" className="bg-sidebar text-sidebar-foreground">
+              Tous les statuts
+            </option>
+            {statuses.map((status) => (
+              <option key={status.id} value={status.id} className="bg-sidebar text-sidebar-foreground">
+                {status.name}
+              </option>
+            ))}
+          </select>
+
+          <button
+            type="submit"
+            className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+          >
+            Rechercher
+          </button>
+        </form>
+      )}
     </nav>
   );
 }
