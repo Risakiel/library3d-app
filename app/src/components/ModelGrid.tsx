@@ -2,6 +2,9 @@
 
 import { Fragment, useEffect, useRef, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Select, SelectOption } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { tagColorSolidClass } from "@/lib/tagColors";
 
@@ -14,12 +17,27 @@ export interface ModelCardData {
   id: string;
   name: string;
   source: string;
+  statusId: string | null;
+  statusName: string | null;
   coverPath: string | null;
   photoCount: number;
   tags: { id: string; name: string; color: keyof typeof TAG_COLOR_ORDER }[];
 }
 
-export function ModelGrid({ models }: { models: ModelCardData[] }) {
+interface OptionItem {
+  id: string;
+  name: string;
+}
+
+interface ModelGridProps {
+  models: ModelCardData[];
+  statuses: OptionItem[];
+  blueTags: OptionItem[];
+}
+
+export function ModelGrid({ models, statuses, blueTags }: ModelGridProps) {
+  const [modelsState, setModelsState] = useState(models);
+  const [availableBlueTags, setAvailableBlueTags] = useState(blueTags);
   const [previewModelId, setPreviewModelId] = useState<string | null>(null);
   const [images, setImages] = useState<string[]>([]);
   const [index, setIndex] = useState(0);
@@ -27,6 +45,14 @@ export function ModelGrid({ models }: { models: ModelCardData[] }) {
   const [rowHeight, setRowHeight] = useState<number | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
   const firstCardRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    setModelsState(models);
+  }, [models]);
+
+  useEffect(() => {
+    setAvailableBlueTags(blueTags);
+  }, [blueTags]);
 
   useEffect(() => {
     function measure() {
@@ -69,21 +95,60 @@ export function ModelGrid({ models }: { models: ModelCardData[] }) {
     setImages([]);
   }
 
-  const previewModel = models.find((model) => model.id === previewModelId) ?? null;
-  const previewIndex = previewModel ? models.findIndex((model) => model.id === previewModel.id) : -1;
+  async function updateStatus(modelId: string, statusId: string) {
+    const response = await fetch(`/api/models/${modelId}/status`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ statusId: statusId || null }),
+    });
+    if (!response.ok) return;
+    const data = await response.json();
+    setModelsState((current) =>
+      current.map((model) =>
+        model.id === modelId
+          ? { ...model, statusId: data.statusId, statusName: data.statusName }
+          : model,
+      ),
+    );
+  }
+
+  async function addTag(modelId: string, payload: { tagId: string } | { name: string }) {
+    const response = await fetch(`/api/models/${modelId}/tags`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) return;
+    const data = await response.json();
+    const tag = data.tag as { id: string; name: string; color: "BLUE" };
+
+    setModelsState((current) =>
+      current.map((model) =>
+        model.id === modelId && !model.tags.some((t) => t.id === tag.id)
+          ? { ...model, tags: [...model.tags, tag] }
+          : model,
+      ),
+    );
+    setAvailableBlueTags((current) =>
+      current.some((t) => t.id === tag.id) ? current : [...current, tag].sort((a, b) => a.name.localeCompare(b.name)),
+    );
+  }
+
+  const previewModel = modelsState.find((model) => model.id === previewModelId) ?? null;
+  const previewIndex = previewModel ? modelsState.findIndex((model) => model.id === previewModel.id) : -1;
   // On garde la ligne complete intacte (comme CGTrader) : le panneau s'affiche
   // seulement apres le dernier modele de la ligne contenant celui clique.
   const rowEndIndex =
     previewIndex === -1
       ? -1
-      : Math.min(Math.floor(previewIndex / COLUMNS) * COLUMNS + COLUMNS - 1, models.length - 1);
+      : Math.min(Math.floor(previewIndex / COLUMNS) * COLUMNS + COLUMNS - 1, modelsState.length - 1);
 
   // Hauteur du panneau = exactement 2 lignes de cartes + la marge entre elles.
   const panelHeight = rowHeight ? rowHeight * 2 + GRID_GAP_PX : null;
 
   return (
     <div className="grid grid-cols-6 gap-5">
-      {models.map((model, modelIndex) => {
+      {modelsState.map((model, modelIndex) => {
         const sortedTags = [...model.tags].sort(
           (a, b) => TAG_COLOR_ORDER[a.color] - TAG_COLOR_ORDER[b.color],
         );
@@ -165,6 +230,11 @@ export function ModelGrid({ models }: { models: ModelCardData[] }) {
                   onIndexChange={setIndex}
                   onClose={closePreview}
                   height={panelHeight}
+                  statuses={statuses}
+                  blueTags={availableBlueTags}
+                  onStatusChange={(statusId) => updateStatus(previewModel.id, statusId)}
+                  onAddExistingTag={(tagId) => addTag(previewModel.id, { tagId })}
+                  onCreateTag={(name) => addTag(previewModel.id, { name })}
                 />
               </div>
             )}
@@ -183,12 +253,33 @@ interface PreviewPanelProps {
   onIndexChange: (index: number) => void;
   onClose: () => void;
   height: number | null;
+  statuses: OptionItem[];
+  blueTags: OptionItem[];
+  onStatusChange: (statusId: string) => void;
+  onAddExistingTag: (tagId: string) => void;
+  onCreateTag: (name: string) => void;
 }
 
-function PreviewPanel({ model, images, loading, index, onIndexChange, onClose, height }: PreviewPanelProps) {
+function PreviewPanel({
+  model,
+  images,
+  loading,
+  index,
+  onIndexChange,
+  onClose,
+  height,
+  statuses,
+  blueTags,
+  onStatusChange,
+  onAddExistingTag,
+  onCreateTag,
+}: PreviewPanelProps) {
+  const [newTagName, setNewTagName] = useState("");
   const sortedTags = [...model.tags].sort(
     (a, b) => TAG_COLOR_ORDER[a.color] - TAG_COLOR_ORDER[b.color],
   );
+  const modelTagIds = new Set(model.tags.map((tag) => tag.id));
+  const addableTags = blueTags.filter((tag) => !modelTagIds.has(tag.id));
 
   return (
     <Card className="my-2 overflow-hidden" style={height ? { height } : undefined}>
@@ -266,28 +357,81 @@ function PreviewPanel({ model, images, loading, index, onIndexChange, onClose, h
           )}
         </div>
 
-        <div className="col-span-12 h-full overflow-y-auto md:col-span-3">
-          <h3 className="text-lg font-bold">{model.name}</h3>
-          <p className="mt-1 text-sm text-muted-foreground">Source : {model.source}</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {model.photoCount} photo{model.photoCount > 1 ? "s" : ""}
-          </p>
+        <div className="col-span-12 flex h-full flex-col gap-3 overflow-y-auto md:col-span-3">
+          <div>
+            <h3 className="text-lg font-bold">{model.name}</h3>
+            <p className="mt-1 text-sm text-muted-foreground">Source : {model.source}</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {model.photoCount} photo{model.photoCount > 1 ? "s" : ""}
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs text-muted-foreground">Statut</label>
+            <Select
+              value={model.statusId ?? ""}
+              onChange={(event) => onStatusChange(event.target.value)}
+              className="w-full"
+            >
+              <SelectOption value="">Aucun statut</SelectOption>
+              {statuses.map((status) => (
+                <SelectOption key={status.id} value={status.id}>
+                  {status.name}
+                </SelectOption>
+              ))}
+            </Select>
+          </div>
 
           {sortedTags.length > 0 && (
-            <div className="mt-3 flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-1.5">
               {sortedTags.map((tag) => (
                 <span
                   key={tag.id}
-                  className={cn(
-                    "rounded-full px-2 py-0.5 text-xs",
-                    tagColorSolidClass(tag.color),
-                  )}
+                  className={cn("rounded-full px-2 py-0.5 text-xs", tagColorSolidClass(tag.color))}
                 >
                   {tag.name}
                 </span>
               ))}
             </div>
           )}
+
+          <div className="space-y-1.5">
+            <label className="text-xs text-muted-foreground">Ajouter un tag</label>
+            <Select
+              value=""
+              onChange={(event) => {
+                if (event.target.value) onAddExistingTag(event.target.value);
+              }}
+              className="w-full"
+            >
+              <SelectOption value="">Tag existant...</SelectOption>
+              {addableTags.map((tag) => (
+                <SelectOption key={tag.id} value={tag.id}>
+                  {tag.name}
+                </SelectOption>
+              ))}
+            </Select>
+            <div className="flex gap-2">
+              <Input
+                value={newTagName}
+                onChange={(event) => setNewTagName(event.target.value)}
+                placeholder="Nouveau tag..."
+                className="h-8 text-sm"
+              />
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => {
+                  if (newTagName.trim()) {
+                    onCreateTag(newTagName.trim());
+                    setNewTagName("");
+                  }
+                }}
+              >
+                Ajouter
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
     </Card>

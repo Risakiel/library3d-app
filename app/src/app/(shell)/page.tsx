@@ -22,6 +22,7 @@ async function getModels(search: string | undefined, page: number) {
       take: PAGE_SIZE,
       include: {
         source: { select: { name: true } },
+        status: { select: { id: true, name: true } },
         coverRender: true,
         renders: { take: 1, orderBy: { filename: "asc" } },
         tags: { select: { id: true, name: true, color: true } },
@@ -34,6 +35,19 @@ async function getModels(search: string | undefined, page: number) {
   return { models, total };
 }
 
+async function getEditableOptions() {
+  const [statuses, blueTags] = await Promise.all([
+    prisma.status.findMany({ orderBy: { position: "asc" }, select: { id: true, name: true } }),
+    prisma.tag.findMany({
+      where: { color: "BLUE", archived: false },
+      orderBy: { name: "asc" },
+      select: { id: true, name: true },
+    }),
+  ]);
+
+  return { statuses, blueTags };
+}
+
 interface HomePageProps {
   searchParams: { q?: string; page?: string };
 }
@@ -41,7 +55,10 @@ interface HomePageProps {
 export default async function HomePage({ searchParams }: HomePageProps) {
   const search = searchParams.q?.trim() || undefined;
   const page = Math.max(1, Number(searchParams.page) || 1);
-  const { models, total } = await getModels(search, page);
+  const [{ models, total }, { statuses, blueTags }] = await Promise.all([
+    getModels(search, page),
+    getEditableOptions(),
+  ]);
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   function pageHref(targetPage: number) {
@@ -78,6 +95,8 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       id: model.id,
       name: model.name,
       source: model.source.name,
+      statusId: model.status?.id ?? null,
+      statusName: model.status?.name ?? null,
       coverPath: cover?.relativePath ?? null,
       photoCount: model._count.renders,
       tags: model.tags,
@@ -93,7 +112,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         </p>
       </div>
 
-      <ModelGrid models={cardModels} />
+      <ModelGrid models={cardModels} statuses={statuses} blueTags={blueTags} />
 
       {totalPages > 1 && (
         <div className="mt-8 flex items-center justify-center gap-3">
