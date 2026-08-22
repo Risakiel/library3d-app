@@ -1,12 +1,13 @@
 "use client";
 
-import { Fragment, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { tagColorSolidClass } from "@/lib/tagColors";
 
 const TAG_COLOR_ORDER = { RED: 0, GREEN: 1, BLUE: 2 } as const;
 const MAX_VISIBLE_TAGS = 4;
+const COLUMNS = 6;
 
 export interface ModelCardData {
   id: string;
@@ -22,6 +23,13 @@ export function ModelGrid({ models }: { models: ModelCardData[] }) {
   const [images, setImages] = useState<string[]>([]);
   const [index, setIndex] = useState(0);
   const [loading, setLoading] = useState(false);
+  const panelRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (previewModelId) {
+      panelRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [previewModelId]);
 
   async function togglePreview(model: ModelCardData) {
     if (previewModelId === model.id) {
@@ -47,9 +55,18 @@ export function ModelGrid({ models }: { models: ModelCardData[] }) {
     setImages([]);
   }
 
+  const previewModel = models.find((model) => model.id === previewModelId) ?? null;
+  const previewIndex = previewModel ? models.findIndex((model) => model.id === previewModel.id) : -1;
+  // On garde la ligne complete intacte (comme CGTrader) : le panneau s'affiche
+  // seulement apres le dernier modele de la ligne contenant celui clique.
+  const rowEndIndex =
+    previewIndex === -1
+      ? -1
+      : Math.min(Math.floor(previewIndex / COLUMNS) * COLUMNS + COLUMNS - 1, models.length - 1);
+
   return (
     <div className="grid grid-cols-6 gap-5">
-      {models.map((model) => {
+      {models.map((model, modelIndex) => {
         const sortedTags = [...model.tags].sort(
           (a, b) => TAG_COLOR_ORDER[a.color] - TAG_COLOR_ORDER[b.color],
         );
@@ -118,10 +135,10 @@ export function ModelGrid({ models }: { models: ModelCardData[] }) {
               </CardContent>
             </Card>
 
-            {isPreviewing && (
-              <div className="col-span-full">
+            {modelIndex === rowEndIndex && previewModel && (
+              <div className="col-span-full" ref={panelRef}>
                 <PreviewPanel
-                  model={model}
+                  model={previewModel}
                   images={images}
                   loading={loading}
                   index={index}
@@ -153,9 +170,9 @@ function PreviewPanel({ model, images, loading, index, onIndexChange, onClose }:
 
   return (
     <Card className="my-2 overflow-hidden">
-      <div className="flex flex-col gap-4 p-4 md:flex-row">
-        <div className="flex-1">
-          <div className="relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-lg bg-black">
+      <div className="grid grid-cols-12 gap-4 p-4">
+        <div className="col-span-12 md:col-span-9">
+          <div className="relative flex h-[380px] items-center justify-center overflow-hidden rounded-lg bg-black">
             {loading || images.length === 0 ? (
               <span className="text-sm text-muted-foreground">
                 {loading ? "Chargement..." : "Aucune photo."}
@@ -204,14 +221,14 @@ function PreviewPanel({ model, images, loading, index, onIndexChange, onClose }:
           </div>
 
           {images.length > 1 && (
-            <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+            <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
               {images.map((imagePath, imageIndex) => (
                 <button
                   key={imagePath}
                   type="button"
                   onClick={() => onIndexChange(imageIndex)}
                   className={cn(
-                    "h-16 w-16 shrink-0 overflow-hidden rounded-md ring-2 ring-transparent",
+                    "h-14 w-14 shrink-0 overflow-hidden rounded-md ring-2 ring-transparent",
                     imageIndex === index && "ring-primary",
                   )}
                 >
@@ -227,7 +244,7 @@ function PreviewPanel({ model, images, loading, index, onIndexChange, onClose }:
           )}
         </div>
 
-        <div className="w-full shrink-0 md:w-64">
+        <div className="col-span-12 h-[380px] overflow-y-auto md:col-span-3">
           <h3 className="text-lg font-bold">{model.name}</h3>
           <p className="mt-1 text-sm text-muted-foreground">Source : {model.source}</p>
           <p className="mt-1 text-sm text-muted-foreground">
