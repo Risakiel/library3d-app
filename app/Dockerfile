@@ -13,4 +13,4 @@ RUN apk add --no-cache openssl
 ENV NODE_ENV=production
 COPY --from=base /app ./
 EXPOSE 3000
-CMD ["sh", "-c", "npx prisma db push --skip-generate --accept-data-loss && npm run start"]
+CMD ["sh", "/app/start.sh"]
